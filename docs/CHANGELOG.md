@@ -2,6 +2,19 @@
 
 All notable changes to the Academic Project Management System (PMS) will be documented in this file.
 
+## [Prompt 4] - Submissions App (UC10, UC11)
+### Added
+- Implemented `Submission` model in `submissions/models.py` (`assignment`, `file_path`, `file_name`, `file_size`, `version`, `submitted_on`, `is_late`, `formatted_size`, `extension`) with migrations. Files are stored on disk under `MEDIA_ROOT/uploads/<assignment_id>/` and metadata in the database.
+- Implemented `submissions/services.py` containing complete business logic:
+  - `submit_file()`: enforces assignment ownership, allowed submission states (`In progress`, `Overdue`, `Revision requested`, with automatic smooth progression from `Assigned`), non-empty check, `MAX_UPLOAD_SIZE` (10 MB), allowed extension check, magic bytes / file signature inspection (blocking `.exe`, `.dll`, PE, ELF, Mach-O binaries and disguised binaries), safe filename sanitization, version auto-increment (`previous_max + 1`), and atomic rollback removing orphaned disk files if database creation or transition fails.
+  - Notification stub: `notify_teacher_new_submission()` invoked non-blockingly so notification failure never interrupts submission.
+  - `teacher_open_submission()`: automatically transitions assignment from `Submitted` to `Under review` on teacher's initial inspection.
+  - `get_submission_for_download()`: enforces strict authorization for downloads (students can only download their own deliverables, teachers only files from their supervised projects, 403/404 for unauthorized access).
+- Implemented UC10 (Submit File): student file upload form on assignment detail view and dedicated upload page (`/submissions/upload/<assignment_id>/`), version history table, and late submission support for `Overdue` deliverables.
+- Implemented UC11 (View Submissions): teacher submissions monitoring table (`/submissions/`) with project and status filters, student details, version tags, file sizes, timestamps, and "Late" vs "On Time" badges.
+- Implemented secure streaming file downloads via `FileResponse(as_attachment=True)` with no public `/media/` serving in production.
+- Added comprehensive test suite in `submissions/tests/test_submissions.py` using `override_settings(MEDIA_ROOT=tempdir)` covering all 13 required scenarios: valid PDF acceptance, `.exe` rejection, renamed `.exe` to `.pdf` rejected via signature check, oversize limit rejection, empty file rejection, path traversal filename sanitization, version incrementing on resubmission, atomic rollback with zero orphaned files or DB rows, unauthorized student rejection, automatic `Under review` state transition on teacher view, download permissions isolation, late submissions handling, and notification fault tolerance.
+
 ## [Prompt 3] - Progress Tracking App (UC07, UC08, UC09)
 ### Added
 - Implemented `ProgressUpdate` model in `progress/models.py` with `assignment` foreign key, `percent_complete` (0-100 validator), `remarks`, and `updated_on` timestamp with migrations.

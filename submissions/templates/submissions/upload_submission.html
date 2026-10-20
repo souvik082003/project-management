@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Work - {{ assignment.project.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <!-- Project Context -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                    <div>
+                        <span class="text-muted small d-block">Submitting Work For</span>
+                        <h3 class="fw-bold mb-1">{{ assignment.project.title }}</h3>
+                        <span class="text-muted small">Supervisor: {{ assignment.project.created_by.get_display_name }}</span>
+                    </div>
+                    <div>
+                        <span class="badge bg-primary fs-6 px-3 py-2">{{ assignment.get_status_display }}</span>
+                    </div>
+                </div>
+
+                <div class="row g-3 py-2 bg-light rounded-3 mt-2">
+                    <div class="col-sm-6">
+                        <span class="text-muted small d-block">Deadline</span>
+                        <strong class="{% if assignment.is_past_deadline %}text-danger{% endif %}">
+                            {{ assignment.project.deadline|date:"M d, Y H:i" }}
+                        </strong>
+                        {% if assignment.is_past_deadline %}
+                            <span class="badge bg-danger ms-1">Late Submissions Permitted</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border ms-1">{{ assignment.days_remaining }} days left</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-muted small d-block">Submissions Count</span>
+                        <strong>{{ submission_history.count }} version(s) uploaded</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Form -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-cloud-arrow-up me-2 text-success"></i>Upload File Deliverable</h5>
+            </div>
+            <div class="card-body p-4">
+                {% if can_submit %}
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger py-2">
+                                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.file.id_for_label }}" class="form-label fw-semibold">
+                                Choose Deliverable File <span class="text-danger">*</span>
+                            </label>
+                            {{ form.file }}
+                            {% if form.file.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.file.errors %}<div>{{ error }}</div>{% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                {{ form.file.help_text }}
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info py-2 small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Submitting a new file will automatically increment your submission version. If this project was previously in <em>Revision requested</em> or <em>Overdue</em>, status will update to <em>Submitted</em>.
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="bi bi-upload me-1"></i> Upload &amp; Submit Work
+                            </button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="alert alert-secondary mb-0">
+                        <i class="bi bi-lock me-1"></i>
+                        File submissions are locked because project status is <strong>{{ assignment.get_status_display }}</strong>.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Version History -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Submission Version History</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Version</th>
+                            <th>File Name</th>
+                            <th>Size</th>
+                            <th>Submitted Date</th>
+                            <th>Status</th>
+                            <th class="text-end pe-3">Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if submission_history %}
+                            {% for sub in submission_history %}
+                                <tr>
+                                    <td class="ps-3"><span class="badge bg-primary">v{{ sub.version }}</span></td>
+                                    <td class="fw-semibold">{{ sub.file_name }}</td>
+                                    <td class="small text-muted">{{ sub.formatted_size }}</td>
+                                    <td class="small">{{ sub.submitted_on|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        {% if sub.is_late %}
+                                            <span class="badge bg-danger">Late Submission</span>
+                                        {% else %}
+                                            <span class="badge bg-success">On Time</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <a href="{% url 'submissions:download_submission' sub.id %}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-download me-1"></i> Download
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    No submissions uploaded yet.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <a href="{% url 'assignments:assignment_detail' assignment.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Project Details
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

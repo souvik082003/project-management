@@ -59,7 +59,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/submissions/">
+                                <a class="nav-link" href="{% url 'submissions:submission_list' %}">
                                     <i class="bi bi-file-earmark-arrow-up me-1"></i> Submissions
                                 </a>
                             </li>
@@ -81,7 +81,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/submissions/upload/">
+                                <a class="nav-link" href="{% url 'submissions:upload_picker' %}">
                                     <i class="bi bi-cloud-arrow-up me-1"></i> Submit File
                                 </a>
                             </li>

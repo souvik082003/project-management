@@ -80,13 +80,67 @@
 
                 <!-- Navigation shortcuts -->
                 <div class="border-top pt-3 d-flex gap-2 flex-wrap">
-                    <a href="/submissions/upload/" class="btn btn-outline-success btn-sm">
-                        <i class="bi bi-cloud-arrow-up me-1"></i> Submit Work
+                    <a href="{% url 'submissions:upload_submission' assignment.id %}" class="btn btn-success btn-sm">
+                        <i class="bi bi-cloud-arrow-up me-1"></i> Submit Work / New Version
                     </a>
                     <a href="/reviews/feedback/" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-chat-left-quote me-1"></i> View Feedback &amp; Marks
                     </a>
                 </div>
+            </div>
+        </div>
+
+        <!-- UC10/UC11 Submission History Section -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-file-earmark-arrow-up me-2 text-success"></i>Submitted Work History</h5>
+                <a href="{% url 'submissions:upload_submission' assignment.id %}" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-plus-circle me-1"></i> New Submission
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Version</th>
+                            <th>File Name</th>
+                            <th>Size</th>
+                            <th>Submitted Date</th>
+                            <th>Deadline Status</th>
+                            <th class="text-end pe-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if assignment.submissions.all %}
+                            {% for sub in assignment.submissions.all %}
+                                <tr>
+                                    <td class="ps-3"><span class="badge bg-primary">v{{ sub.version }}</span></td>
+                                    <td class="fw-semibold">{{ sub.file_name }}</td>
+                                    <td class="small text-muted">{{ sub.formatted_size }}</td>
+                                    <td class="small">{{ sub.submitted_on|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        {% if sub.is_late %}
+                                            <span class="badge bg-danger">Late Submission</span>
+                                        {% else %}
+                                            <span class="badge bg-success">On Time</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <a href="{% url 'submissions:download_submission' sub.id %}" class="btn btn-sm btn-outline-secondary" title="Download file">
+                                            <i class="bi bi-download me-1"></i> Download
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    No files submitted yet. Click <strong>Submit Work</strong> to upload your project deliverables.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
