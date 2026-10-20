@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - PMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <div>
+                        <h2 class="h3 fw-bold mb-1">
+                            Welcome, {{ user.name }} ({{ user.get_role_display }})
+                        </h2>
+                        <p class="text-muted mb-0">Academic Project Monitoring &amp; Evaluation Portal</p>
+                    </div>
+                    <div>
+                        {% if user.is_teacher %}
+                            <span class="badge bg-primary fs-6 px-3 py-2"><i class="bi bi-person-badge me-1"></i>Teacher Portal</span>
+                        {% elif user.is_student %}
+                            <span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-mortarboard me-1"></i>Student Portal</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 mb-4">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <span class="text-muted d-block small">Email Address</span>
+                            <strong>{{ user.email }}</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted d-block small">Department</span>
+                            <strong>{{ user.department|default:"Not specified" }}</strong>
+                        </div>
+                        {% if user.is_student %}
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block small">Roll Number</span>
+                                <strong>{{ user.roll_no }}</strong>
+                            </div>
+                        {% elif user.is_teacher %}
+                            <div class="col-sm-6">
+                                <span class="text-muted d-block small">Employee ID</span>
+                                <strong>{{ user.employee_id }}</strong>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <h5 class="fw-bold mb-3"><i class="bi bi-lightning-charge me-1 text-warning"></i>Quick Actions</h5>
+                <div class="row g-3">
+                    {% if user.is_teacher %}
+                        <div class="col-md-4">
+                            <a href="/projects/" class="btn btn-outline-primary w-100 py-3 text-start">
+                                <div class="fw-bold"><i class="bi bi-folder-plus me-1"></i> Projects</div>
+                                <small class="text-muted">Create &amp; manage academic projects</small>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="/assignments/" class="btn btn-outline-primary w-100 py-3 text-start">
+                                <div class="fw-bold"><i class="bi bi-person-plus me-1"></i> Assign Students</div>
+                                <small class="text-muted">Allocate projects to students</small>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="/progress/monitor/" class="btn btn-outline-primary w-100 py-3 text-start">
+                                <div class="fw-bold"><i class="bi bi-graph-up me-1"></i> Monitor Progress</div>
+                                <small class="text-muted">Track progress milestones</small>
+                            </a>
+                        </div>
+                    {% elif user.is_student %}
+                        <div class="col-md-4">
+                            <a href="/assignments/my/" class="btn btn-outline-success w-100 py-3 text-start">
+                                <div class="fw-bold"><i class="bi bi-journal-check me-1"></i> My Projects</div>
+                                <small class="text-muted">View your assigned projects</small>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="/progress/update/" class="btn btn-outline-success w-100 py-3 text-start">
+                                <div class="fw-bold"><i class="bi bi-arrow-repeat me-1"></i> Update Progress</div>
+                                <small class="text-muted">Report progress completion %</small>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="/submissions/upload/" class="btn btn-outline-success w-100 py-3 text-start">
+                                <div class="fw-bold"><i class="bi bi-cloud-arrow-up me-1"></i> Submit Work</div>
+                                <small class="text-muted">Upload report &amp; source code</small>
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

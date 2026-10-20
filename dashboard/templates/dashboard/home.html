@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Academic Project Monitoring and Evaluation System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Hero section -->
+        <div class="p-5 mb-4 bg-white rounded-3 shadow-sm border text-center">
+            <div class="container-fluid py-3">
+                <div class="display-5 fw-bold text-primary mb-3">
+                    <i class="bi bi-mortarboard-fill text-warning me-2"></i>Academic Project Monitoring & Evaluation
+                </div>
+                <p class="col-md-10 fs-5 mx-auto text-muted mb-4">
+                    A streamlined web-based platform for academic institutions. Teachers assign and supervise
+                    projects, review milestones, and assess student outcomes. Students collaborate, submit work,
+                    and receive direct feedback.
+                </p>
+
+                {% if not user.is_authenticated %}
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="/accounts/login/" class="btn btn-primary btn-lg px-4 shadow-sm">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Login to Portal
+                        </a>
+                        <a href="/accounts/register/" class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="bi bi-person-plus me-2"></i>Register Account
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info d-inline-block px-4 py-2 mb-3">
+                        Logged in as <strong>{{ user.get_display_name }}</strong> ({{ user.get_role_display }})
+                    </div>
+                    <div>
+                        {% if user.is_teacher %}
+                            <a href="/projects/" class="btn btn-primary px-4 me-2">
+                                <i class="bi bi-folder2-open me-2"></i>Manage Projects
+                            </a>
+                            <a href="/progress/monitor/" class="btn btn-outline-primary px-4">
+                                <i class="bi bi-graph-up me-2"></i>Monitor Progress
+                            </a>
+                        {% elif user.is_student %}
+                            <a href="/assignments/my/" class="btn btn-success px-4 me-2">
+                                <i class="bi bi-journal-bookmark me-2"></i>My Projects
+                            </a>
+                            <a href="/submissions/upload/" class="btn btn-outline-success px-4">
+                                <i class="bi bi-cloud-arrow-up me-2"></i>Submit Work
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- System Features Grid -->
+        <div class="row g-4 py-2">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0 border-top border-primary border-3">
+                    <div class="card-body text-center p-4">
+                        <div class="fs-1 text-primary mb-3"><i class="bi bi-kanban"></i></div>
+                        <h5 class="card-title fw-bold">Project Allocation</h5>
+                        <p class="card-text text-muted small">
+                            Teachers define project scopes, assign students individually, and establish clear submission deadlines.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0 border-top border-success border-3">
+                    <div class="card-body text-center p-4">
+                        <div class="fs-1 text-success mb-3"><i class="bi bi-speedometer2"></i></div>
+                        <h5 class="card-title fw-bold">Progress Tracking</h5>
+                        <p class="card-text text-muted small">
+                            Students report milestone completion percentages and remarks. State machine validates status updates in real-time.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0 border-top border-warning border-3">
+                    <div class="card-body text-center p-4">
+                        <div class="fs-1 text-warning mb-3"><i class="bi bi-award"></i></div>
+                        <h5 class="card-title fw-bold">Review & Evaluation</h5>
+                        <p class="card-text text-muted small">
+                            Secure multi-version submission handling, iterative teacher feedback, and structured score evaluation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

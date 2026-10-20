@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Academic PMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-plus-fill text-primary display-5"></i>
+                    <h3 class="fw-bold mt-2">Create an Account</h3>
+                    <p class="text-muted small">Register as a Student or Teacher in the PMS system</p>
+                </div>
+
+                <form method="post" novalidate id="registrationForm">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2">
+                            {% for error in form.non_field_errors %}
+                                <div><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Full Name -->
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.name.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="mb-3">
+                        <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.email.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Role Selection -->
+                    <div class="mb-3">
+                        <label for="{{ form.role.id_for_label }}" class="form-label fw-semibold">Account Role <span class="text-danger">*</span></label>
+                        {{ form.role }}
+                        {% if form.role.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.role.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Department -->
+                    <div class="mb-3">
+                        <label for="{{ form.department.id_for_label }}" class="form-label fw-semibold">Department</label>
+                        {{ form.department }}
+                        {% if form.department.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.department.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Roll Number (for Students) -->
+                    <div class="mb-3" id="rollNoGroup">
+                        <label for="{{ form.roll_no.id_for_label }}" class="form-label fw-semibold">
+                            Roll Number <span class="text-danger">*</span>
+                        </label>
+                        {{ form.roll_no }}
+                        {% if form.roll_no.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.roll_no.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Required for student accounts.</div>
+                    </div>
+
+                    <!-- Employee ID (for Teachers) -->
+                    <div class="mb-3" id="employeeIdGroup" style="display: none;">
+                        <label for="{{ form.employee_id.id_for_label }}" class="form-label fw-semibold">
+                            Employee ID <span class="text-danger">*</span>
+                        </label>
+                        {{ form.employee_id }}
+                        {% if form.employee_id.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.employee_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Required for faculty/teacher accounts.</div>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.password.errors %}<div>{{ error }}</div>{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Password Confirmation -->
+                    <div class="mb-4">
+                        <label for="{{ form.password_confirm.id_for_label }}" class="form-label fw-semibold">Confirm Password <span class="text-danger">*</span></label>
+                        {{ form.password_confirm }}
+                        {% if form.password_confirm.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.password_confirm.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                        <i class="bi bi-check2-circle me-1"></i> Register Account
+                    </button>
+                </form>
+
+                <div class="text-center mt-4 pt-3 border-top">
+                    <span class="text-muted small">Already have an account?</span>
+                    <a href="{% url 'accounts:login' %}" class="small fw-semibold ms-1">Log in here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Dynamic toggling of Student (roll_no) vs Teacher (employee_id) fields
+    (function() {
+        const roleSelect = document.getElementById('id_role');
+        const rollNoGroup = document.getElementById('rollNoGroup');
+        const employeeIdGroup = document.getElementById('employeeIdGroup');
+
+        function toggleRoleFields() {
+            if (!roleSelect) return;
+            const selected = roleSelect.value;
+            if (selected === 'teacher') {
+                if (rollNoGroup) rollNoGroup.style.display = 'none';
+                if (employeeIdGroup) employeeIdGroup.style.display = 'block';
+            } else {
+                if (rollNoGroup) rollNoGroup.style.display = 'block';
+                if (employeeIdGroup) employeeIdGroup.style.display = 'none';
+            }
+        }
+
+        if (roleSelect) {
+            roleSelect.addEventListener('change', toggleRoleFields);
+            toggleRoleFields();
+        }
+    })();
+</script>
+{% endblock %}
