@@ -95,11 +95,53 @@ def my_assignments_view(request):
 def assignment_detail_view(request, pk: int):
     """
     Displays assignment details for the student.
+    Includes the Update Progress form, Bootstrap progress bar, and history timeline.
     A student cannot open another student's assignment (returns 404).
     """
+    from progress import services as progress_services
+    from progress.forms import ProgressUpdateForm
+
     assignment = services.get_student_assignment_or_404(pk, request.user)
+    history = assignment.progress_updates.all().order_by('-updated_on')
+    latest_update = history.first()
+    latest_percent = latest_update.percent_complete if latest_update else 0
+    can_update = assignment.status in progress_services.ALLOWED_PROGRESS_STATUSES
+
+    if request.method == 'POST' and 'update_progress' in request.POST:
+        if not can_update:
+            messages.error(
+                request,
+                f"Progress updates are locked because this project is currently '{assignment.get_status_display()}'."
+            )
+            return redirect('assignments:assignment_detail', pk=assignment.id)
+
+        form = ProgressUpdateForm(request.POST)
+        if form.is_valid():
+            try:
+                progress_services.add_progress_update(
+                    student=request.user,
+                    assignment=assignment,
+                    percent_complete=form.cleaned_data['percent_complete'],
+                    remarks=form.cleaned_data['remarks']
+                )
+                messages.success(request, "Progress updated successfully!")
+                return redirect('assignments:assignment_detail', pk=assignment.id)
+            except ValidationError as err:
+                if hasattr(err, 'message_dict'):
+                    for field, err_list in err.message_dict.items():
+                        for msg in err_list:
+                            form.add_error(field if field in form.fields else None, msg)
+                else:
+                    for msg in err.messages:
+                        form.add_error(None, msg)
+    else:
+        form = ProgressUpdateForm(initial={'percent_complete': latest_percent})
 
     return render(request, 'assignments/assignment_detail.html', {
         'assignment': assignment,
         'project': assignment.project,
+        'form': form,
+        'history': history,
+        'latest_percent': latest_percent,
+        'can_update': can_update,
     })

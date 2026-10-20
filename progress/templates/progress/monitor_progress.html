@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Monitor Progress - PMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="h3 fw-bold mb-1"><i class="bi bi-graph-up me-2 text-primary"></i>Monitor Student Progress</h2>
+        <p class="text-muted small mb-0">Track real-time project milestone completion and identify at-risk students</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'progress:progress_report_select' %}" class="btn btn-outline-primary">
+            <i class="bi bi-file-earmark-bar-graph me-1"></i> Progress Reports
+        </a>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-3">
+        <form method="get" class="row g-3 align-items-center">
+            <!-- Project Filter -->
+            <div class="col-md-5">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-folder2"></i></span>
+                    <select name="project" class="form-select" onchange="this.form.submit()">
+                        <option value="">All My Projects</option>
+                        {% for p in teacher_projects %}
+                            <option value="{{ p.id }}" {% if selected_project_id == p.id %}selected{% endif %}>{{ p.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-funnel"></i></span>
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Statuses</option>
+                        {% for val, lbl in status_choices %}
+                            <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ lbl }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Reset -->
+            <div class="col-md-3 text-md-end">
+                {% if selected_project_id or status_filter %}
+                    <a href="{% url 'progress:monitor_progress' %}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Alert Legend -->
+<div class="d-flex gap-3 mb-3 small">
+    <div><span class="badge bg-danger me-1">&nbsp;</span> Overdue / Passed Deadline</div>
+    <div><span class="badge bg-warning text-dark me-1">&nbsp;</span> Stale (No update in 7+ days)</div>
+    <div><span class="badge bg-success me-1">&nbsp;</span> Active / On Track</div>
+</div>
+
+<!-- Monitoring Table -->
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" class="ps-3">Student Name</th>
+                    <th scope="col">Roll Number</th>
+                    <th scope="col">Project</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" style="min-width: 150px;">Latest Progress</th>
+                    <th scope="col">Last Update</th>
+                    <th scope="col">Days Remaining</th>
+                    <th scope="col" class="text-end pe-3">History</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if summary_items %}
+                    {% for item in summary_items %}
+                        <tr class="{% if item.is_overdue %}table-danger{% elif item.is_stale %}table-warning{% endif %}">
+                            <td class="ps-3 fw-bold">
+                                <a href="{% url 'progress:assignment_progress_history' item.assignment.id %}" class="text-decoration-none text-dark">
+                                    {{ item.student.get_display_name }}
+                                </a>
+                            </td>
+                            <td>{{ item.student.roll_no|default:"-" }}</td>
+                            <td>
+                                <span class="small fw-semibold">{{ item.project.title }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ item.assignment.get_status_display }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height: 14px;">
+                                        <div class="progress-bar {% if item.latest_percent >= 80 %}bg-success{% elif item.latest_percent >= 40 %}bg-primary{% else %}bg-warning{% endif %}"
+                                             role="progressbar"
+                                             style="width: {{ item.latest_percent }}%;"></div>
+                                    </div>
+                                    <span class="small fw-bold">{{ item.latest_percent }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.last_updated_on %}
+                                    <span class="small">{{ item.last_updated_on|date:"M d, Y" }}</span>
+                                {% else %}
+                                    <span class="badge bg-light text-muted border">No updates</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.is_overdue %}
+                                    <span class="badge bg-danger">Overdue</span>
+                                {% else %}
+                                    <span class="small">{{ item.days_remaining }} days</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-3">
+                                <a href="{% url 'progress:assignment_progress_history' item.assignment.id %}" class="btn btn-sm btn-outline-primary" title="View Progress History">
+                                    <i class="bi bi-clock-history me-1"></i> History
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox display-6 d-block mb-2 text-secondary"></i>
+                            No student assignments found matching your filter selection.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

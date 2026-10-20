@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Progress History - {{ assignment.student.get_display_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <span class="text-muted small d-block">Student Milestone History</span>
+                        <h3 class="fw-bold mb-1">{{ assignment.student.get_display_name }}</h3>
+                        <div class="text-muted small">
+                            Roll No: <strong>{{ assignment.student.roll_no|default:"-" }}</strong> &bull;
+                            Project: <strong>{{ assignment.project.title }}</strong>
+                        </div>
+                    </div>
+                    <a href="{% url 'progress:monitor_progress' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Monitor
+                    </a>
+                </div>
+
+                <!-- Current Progress Indicator -->
+                <div class="p-3 bg-light rounded-3 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="fw-semibold">Current Progress</span>
+                        <span class="fw-bold fs-5 text-primary">{{ latest_percent }}%</span>
+                    </div>
+                    <div class="progress" style="height: 18px;">
+                        <div class="progress-bar bg-success progress-bar-striped"
+                             role="progressbar"
+                             style="width: {{ latest_percent }}%;">
+                            {{ latest_percent }}%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Entries -->
+                <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-primary"></i>Logged Updates ({{ history.count }})</h5>
+                {% if history %}
+                    <div class="list-group list-group-flush border rounded-3">
+                        {% for update in history %}
+                            <div class="list-group-item p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-primary fs-6">{{ update.percent_complete }}% Complete</span>
+                                    <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>{{ update.updated_on|date:"M d, Y H:i" }}</span>
+                                </div>
+                                {% if update.remarks %}
+                                    <p class="text-secondary mb-0 ps-3 border-start border-3 border-primary">
+                                        {{ update.remarks }}
+                                    </p>
+                                {% else %}
+                                    <span class="text-muted fst-italic small">No remarks submitted.</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-muted border rounded-3">
+                        This student has not submitted any progress updates yet.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

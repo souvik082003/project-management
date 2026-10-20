@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Progress Report - {{ project.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    nav, footer, .no-print {
+        display: none !important;
+    }
+    body {
+        background-color: white !important;
+        font-size: 11pt;
+    }
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-11">
+        <!-- Controls & Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 no-print">
+            <div>
+                <a href="{% url 'progress:progress_report_select' %}" class="btn btn-outline-secondary btn-sm mb-1">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Projects
+                </a>
+                <h3 class="fw-bold mb-0"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i>Milestone Progress Report</h3>
+            </div>
+            <div class="btn-toolbar gap-2">
+                <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i> Print Report
+                </button>
+                <a href="{% url 'progress:progress_report_csv' project.id %}" class="btn btn-success">
+                    <i class="bi bi-filetype-csv me-1"></i> Download CSV
+                </a>
+            </div>
+        </div>
+
+        <!-- Project Meta Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Project</span>
+                        <h4 class="fw-bold mb-1">{{ project.title }}</h4>
+                        <span class="text-muted small">Supervisor: {{ project.created_by.get_display_name }} ({{ project.created_by.email }})</span>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small d-block">Deadline</span>
+                        <strong>{{ project.deadline|date:"M d, Y H:i" }}</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small d-block">Project Status</span>
+                        <span class="badge bg-primary">{{ project.get_status_display }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 border-start border-primary border-4 p-3">
+                    <div class="text-muted small fw-semibold">TOTAL ASSIGNED STUDENTS</div>
+                    <div class="display-6 fw-bold text-dark">{{ total_students }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 border-start border-success border-4 p-3">
+                    <div class="text-muted small fw-semibold">AVERAGE COMPLETION RATE</div>
+                    <div class="display-6 fw-bold text-success">{{ avg_completion }}%</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 border-start border-danger border-4 p-3">
+                    <div class="text-muted small fw-semibold">OVERDUE ASSIGNMENTS</div>
+                    <div class="display-6 fw-bold text-danger">{{ overdue_count }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Evaluation Table -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0">Detailed Student Milestone Progress</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Roll Number</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th style="min-width: 140px;">Progress</th>
+                            <th>Last Update</th>
+                            <th>Days Left</th>
+                            <th>Flags</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if summary_items %}
+                            {% for item in summary_items %}
+                                <tr>
+                                    <td class="fw-semibold">{{ item.student.get_display_name }}</td>
+                                    <td>{{ item.student.roll_no|default:"-" }}</td>
+                                    <td class="small">{{ item.student.email }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">{{ item.assignment.get_status_display }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress flex-grow-1" style="height: 12px;">
+                                                <div class="progress-bar bg-success" style="width: {{ item.latest_percent }}%;"></div>
+                                            </div>
+                                            <span class="small fw-bold">{{ item.latest_percent }}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="small text-muted">
+                                        {% if item.last_updated_on %}
+                                            {{ item.last_updated_on|date:"Y-m-d H:i" }}
+                                        {% else %}
+                                            <em>No updates</em>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.is_overdue %}
+                                            <span class="text-danger fw-semibold">Overdue</span>
+                                        {% else %}
+                                            {{ item.days_remaining }}d
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.is_overdue %}
+                                            <span class="badge bg-danger">Overdue</span>
+                                        {% endif %}
+                                        {% if item.is_stale %}
+                                            <span class="badge bg-warning text-dark">&gt;7d Idle</span>
+                                        {% endif %}
+                                        {% if not item.is_overdue and not item.is_stale %}
+                                            <span class="badge bg-light text-success border border-success">Active</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    No students assigned to this project yet.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="small text-muted text-center pt-2">
+            Generated on {% now "Y-m-d H:i" %} &bull; Academic Project Monitoring and Evaluation System
+        </div>
+    </div>
+</div>
+{% endblock %}

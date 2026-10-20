@@ -2,6 +2,16 @@
 
 All notable changes to the Academic Project Management System (PMS) will be documented in this file.
 
+## [Prompt 3] - Progress Tracking App (UC07, UC08, UC09)
+### Added
+- Implemented `ProgressUpdate` model in `progress/models.py` with `assignment` foreign key, `percent_complete` (0-100 validator), `remarks`, and `updated_on` timestamp with migrations.
+- Implemented `progress/services.py` with `add_progress_update()` enforcing non-decreasing percentage rules (0-100), ownership validation, locking after submission/evaluation, and state transitions (`Assigned` -> `In progress` on initial update; `Revision requested` -> `In progress`).
+- Implemented UC07 (Update Progress): student milestone form integrated on assignment detail view and dedicated update page with dynamic Bootstrap progress bars and chronological history timelines.
+- Implemented UC08 (Monitor Progress): teacher monitoring table with project and status filters, red highlighting for overdue assignments, amber alerting for stale updates (idle >= 7 days), and student history inspection.
+- Implemented UC09 (Generate Progress Report): per-project report calculating average milestone completion and overdue counts, with print styling and CSV export.
+- Connected real milestone progress updates to Sprint 2's project reports.
+- Comprehensive test suite in `progress/tests/` covering validation boundaries, ownership security (404), status lockout, state machine triggers, teacher isolation, alert flags, and role protections (51 total tests passing with 90% overall code coverage).
+
 ## [Prompt 2] - Projects and Assignments Apps (UC03, UC04, UC05, UC06)
 ### Added
 - Implemented `Project` model with `title`, `description`, `deadline`, `status` (`Draft`, `Assigned`, `Closed`), and `created_by` foreign key with migrations.
