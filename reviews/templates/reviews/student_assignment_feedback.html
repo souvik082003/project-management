@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback - {{ assignment.project.title }} - PMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="mb-3 d-flex justify-content-between align-items-center">
+            <a href="{% url 'assignments:assignment_detail' assignment.id %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to Project Details
+            </a>
+            <a href="{% url 'reviews:student_feedback_list' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-chat-left-quote me-1"></i> All Feedback
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <div>
+                        <span class="text-muted small d-block">Project Feedback History</span>
+                        <h3 class="fw-bold mb-1">{{ assignment.project.title }}</h3>
+                        <span class="text-muted small">Supervisor: <strong>{{ assignment.project.created_by.get_display_name }}</strong></span>
+                    </div>
+                    <div>
+                        <span class="badge {% if assignment.status == 'Revision requested' %}bg-warning text-dark{% elif assignment.status == 'Evaluated' %}bg-success{% else %}bg-primary{% endif %} fs-6 px-3 py-2">
+                            {{ assignment.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if feedbacks %}
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="list-group list-group-flush">
+                    {% for fb in feedbacks %}
+                        <div class="list-group-item p-4">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                <div>
+                                    <span class="badge bg-primary me-2">Deliverable v{{ fb.submission.version }}</span>
+                                    <strong class="text-break">{{ fb.submission.file_name }}</strong>
+                                </div>
+                                <div class="text-end">
+                                    <span class="small text-muted d-block">{{ fb.given_on|date:"M d, Y H:i" }}</span>
+                                    {% if fb.requested_revision %}
+                                        <span class="badge bg-danger mt-1">
+                                            <i class="bi bi-exclamation-octagon me-1"></i> Revision Requested
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success mt-1">
+                                            <i class="bi bi-check-circle me-1"></i> Accepted
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="bg-light p-3 rounded-3 mt-2">
+                                <div class="text-dark">{{ fb.comments|linebreaksbr }}</div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                                <span class="small text-muted">Reviewed by {{ fb.teacher.get_display_name }}</span>
+                                <a href="{% url 'submissions:download_submission' fb.submission.id %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-download me-1"></i> Download v{{ fb.submission.version }}
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="card shadow-sm border-0 text-center py-5">
+                <div class="card-body">
+                    <i class="bi bi-chat-square-dots display-6 text-muted mb-2 d-block"></i>
+                    <h5 class="fw-bold">No Feedback for this Project</h5>
+                    <p class="text-muted small">No supervisor remarks have been registered yet for this project.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

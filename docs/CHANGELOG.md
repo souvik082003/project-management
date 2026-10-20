@@ -2,6 +2,23 @@
 
 All notable changes to the Academic Project Management System (PMS) will be documented in this file.
 
+## [Prompt 5] - Reviews and Grading App (UC12, UC13, UC14, UC15, UC16)
+### Added
+- Implemented `Feedback` model in `reviews/models.py` (`submission` FK, `teacher` FK, `comments`, `requested_revision` boolean flag, `given_on` timestamp).
+- Implemented `Marks` model in `reviews/models.py` (`assignment` OneToOne, `teacher` FK, `score` and `max_score` with `0 <= score <= max_score` model validation, `graded_on` timestamp, and dynamic properties for `percentage`, `grade_band`, and configurable `is_pass`).
+- Implemented `reviews/services.py` encapsulating all business logic:
+  - `give_feedback()`: validates teacher project ownership, enforces assignment `Under review` state, records feedback, and executes `Under review -> Revision requested` when revision is requested (stays `Under review` otherwise).
+  - `assign_marks()`: requires at least one submitted deliverable, enforces assignment `Under review` or `Evaluated` status, blocks second marks row by updating existing record, prevents grading once project is closed, transitions assignment to `Evaluated`, and automatically transitions project `Assigned -> Closed` when all assigned students are evaluated.
+  - `get_student_feedbacks()`: returns feedback records for student's deliverables grouped by submission version (newest first) with revision badges.
+  - `get_student_marks()`: returns published marks with percentage and pass/fail hint, strictly hidden until assignment is `Evaluated`.
+  - `get_project_marks_report()` and `generate_marks_csv()`: computes statistical distribution (average, highest, lowest, passing/failing ratios) and generates print/CSV reports.
+- Implemented UC12 (Give Feedback): teacher review page with student info, milestone progress history, deliverable download, previous comments log, and revision toggle.
+- Implemented UC13 (View Feedback): student feedback timeline grouped by version with distinct revision requested indicators.
+- Implemented UC14 (Assign Marks): teacher grading interface enforcing submission prerequisite and one-row-per-assignment constraint.
+- Implemented UC15 (View Marks): student grade report displaying score, percentage, grade band, and pass/fail indicator.
+- Implemented UC16 (Generate Marks Report): comprehensive class evaluation overview with KPI summary cards, print view, and CSV export.
+- Added test suite in `reviews/tests/test_reviews.py` covering teacher project isolation, state transitions on revision flag, student 403 authorization protection, submission prerequisite rejection, score validation boundaries, update-in-place for second marks assignment, automatic project closure on complete evaluation, student isolation (404), evaluation visibility gate, statistical report calculation, CSV generation, closed-project modification lockout, notification tolerance, and the complete master end-to-end workflow (14 tests passing).
+
 ## [Prompt 4] - Submissions App (UC10, UC11)
 ### Added
 - Implemented `Submission` model in `submissions/models.py` (`assignment`, `file_path`, `file_name`, `file_size`, `version`, `submitted_on`, `is_late`, `formatted_size`, `extension`) with migrations. Files are stored on disk under `MEDIA_ROOT/uploads/<assignment_id>/` and metadata in the database.

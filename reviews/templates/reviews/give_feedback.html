@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Review Submission v{{ submission.version }} - {{ assignment.student.get_display_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Top Navigation -->
+        <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <a href="{% url 'submissions:submission_detail' submission.id %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to Submission Detail
+            </a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'reviews:assign_marks' assignment.id %}" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-award me-1"></i> Grade &amp; Assign Marks
+                </a>
+            </div>
+        </div>
+
+        <!-- Student & Project Header Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <span class="text-muted small d-block">Academic Review &amp; Evaluation</span>
+                        <h3 class="fw-bold mb-1">{{ assignment.student.get_display_name }} &bull; Version {{ submission.version }}</h3>
+                        <div class="text-muted small">
+                            Project: <strong>{{ assignment.project.title }}</strong> &bull;
+                            Roll No: <strong>{{ assignment.student.roll_no|default:"-" }}</strong> &bull;
+                            Department: <strong>{{ assignment.student.department|default:"-" }}</strong>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge {% if assignment.status == 'Revision requested' %}bg-warning text-dark{% elif assignment.status == 'Evaluated' %}bg-success{% else %}bg-primary{% endif %} fs-6 px-3 py-2">
+                            {{ assignment.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Deliverable Download Card -->
+                <div class="p-3 bg-light rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <span class="text-muted small d-block">Submitted Deliverable</span>
+                        <strong class="text-break"><i class="bi bi-file-earmark-text text-primary me-1"></i>{{ submission.file_name }}</strong>
+                        <span class="text-muted small ms-2">({{ submission.formatted_size }}) &bull; {{ submission.submitted_on|date:"M d, Y H:i" }}</span>
+                        {% if submission.is_late %}
+                            <span class="badge bg-danger ms-1">Late Submission</span>
+                        {% else %}
+                            <span class="badge bg-success ms-1">On Time</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{% url 'submissions:download_submission' submission.id %}" class="btn btn-primary">
+                            <i class="bi bi-download me-1"></i> Download Deliverable
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Progress History -->
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-primary"></i>Milestone Progress History</h5>
+                    </div>
+                    <div class="card-body p-3">
+                        {% if progress_history %}
+                            <div class="timeline">
+                                {% for update in progress_history %}
+                                    <div class="border-start border-2 border-primary ps-3 pb-3 position-relative">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-primary">{{ update.percent_complete }}% Complete</span>
+                                            <span class="small text-muted">{{ update.updated_on|date:"M d, Y H:i" }}</span>
+                                        </div>
+                                        <p class="small text-secondary mb-0 mt-1">{{ update.remarks }}</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted small mb-0">No progress updates recorded yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previous Feedback History -->
+            <div class="col-md-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-secondary"></i>Previous Feedback Log</h5>
+                    </div>
+                    <div class="card-body p-3">
+                        {% if previous_feedbacks %}
+                            <div class="list-group list-group-flush">
+                                {% for fb in previous_feedbacks %}
+                                    <div class="list-group-item px-0 py-2">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="small fw-bold">v{{ fb.submission.version }} Feedback</span>
+                                            <span class="small text-muted">{{ fb.given_on|date:"M d, Y H:i" }}</span>
+                                        </div>
+                                        {% if fb.requested_revision %}
+                                            <span class="badge bg-warning text-dark mb-1">Revision Requested</span>
+                                        {% endif %}
+                                        <p class="small text-secondary mb-0">{{ fb.comments|linebreaksbr }}</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted small mb-0">No previous feedback recorded for this assignment.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Submission Form -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-chat-left-dots me-2 text-success"></i>Submit Review Feedback</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2">
+                            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.comments.id_for_label }}" class="form-label fw-semibold">
+                            Teacher Comments / Critique <span class="text-danger">*</span>
+                        </label>
+                        {{ form.comments }}
+                        {% if form.comments.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.comments.errors %}<div>{{ error }}</div>{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.comments.help_text }}</div>
+                    </div>
+
+                    <div class="form-check mb-4 p-3 bg-light rounded-3">
+                        {{ form.requested_revision }}
+                        <label class="form-check-label fw-semibold text-danger ms-2" for="{{ form.requested_revision.id_for_label }}">
+                            <i class="bi bi-exclamation-triangle me-1"></i> Request Revision from Student
+                        </label>
+                        <div class="form-text ms-4">
+                            Checking this box will immediately move project status to <strong>Revision requested</strong>. The student will be prompted to address your comments and upload an updated deliverable.
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'submissions:submission_detail' submission.id %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success px-4">
+                            <i class="bi bi-send me-1"></i> Save &amp; Send Feedback
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

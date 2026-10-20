@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}My Feedback - PMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="h3 fw-bold mb-1"><i class="bi bi-chat-left-quote me-2 text-primary"></i>Supervisor Feedback</h2>
+        <p class="text-muted small mb-0">Review remarks, critique, and revision guidance provided on your submissions</p>
+    </div>
+    <div>
+        <a href="{% url 'reviews:student_marks_list' %}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-award me-1"></i> View My Marks
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-12">
+        {% if feedbacks %}
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-journal-text me-2 text-secondary"></i>Feedback Timeline (Newest First)</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for fb in feedbacks %}
+                        <div class="list-group-item p-4">
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                <div>
+                                    <h5 class="fw-bold mb-1 text-primary">
+                                        {{ fb.submission.assignment.project.title }}
+                                    </h5>
+                                    <span class="badge bg-secondary me-2">Submission v{{ fb.submission.version }}</span>
+                                    <span class="text-muted small">Deliverable: <strong>{{ fb.submission.file_name }}</strong></span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="small text-muted d-block">{{ fb.given_on|date:"M d, Y H:i" }}</span>
+                                    {% if fb.requested_revision %}
+                                        <span class="badge bg-danger mt-1">
+                                            <i class="bi bi-exclamation-octagon me-1"></i> Revision Requested
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success mt-1">
+                                            <i class="bi bi-check-circle me-1"></i> Review Accepted
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="bg-light p-3 rounded-3 mt-2">
+                                <span class="small text-muted d-block fw-semibold mb-1">Supervisor Comments:</span>
+                                <div class="text-dark">{{ fb.comments|linebreaksbr }}</div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                                <span class="small text-muted">
+                                    Reviewed by: <strong>{{ fb.teacher.get_display_name }}</strong>
+                                </span>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'submissions:download_submission' fb.submission.id %}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-download me-1"></i> Download v{{ fb.submission.version }}
+                                    </a>
+                                    {% if fb.submission.assignment.status == 'Revision requested' %}
+                                        <a href="{% url 'submissions:upload_submission' fb.submission.assignment.id %}" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-upload me-1"></i> Upload Revision
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="card shadow-sm border-0 text-center py-5">
+                <div class="card-body">
+                    <i class="bi bi-chat-square-dots display-5 text-muted mb-3 d-block"></i>
+                    <h5 class="fw-bold">No Feedback Received Yet</h5>
+                    <p class="text-muted">Once your supervisor reviews your submitted project deliverables, their remarks will appear here.</p>
+                    <a href="{% url 'assignments:my_assignments' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-journal-bookmark me-1"></i> View My Projects
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

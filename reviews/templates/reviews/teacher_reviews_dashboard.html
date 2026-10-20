@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Reviews & Grading - PMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="h3 fw-bold mb-1"><i class="bi bi-star-half me-2 text-warning"></i>Reviews &amp; Marks Grading</h2>
+        <p class="text-muted small mb-0">Evaluate student project deliverables, provide revisions, and record grades</p>
+    </div>
+    <div>
+        <a href="{% url 'submissions:submission_list' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-file-earmark-arrow-up me-1"></i> All Submissions
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% if project_cards %}
+        {% for card in project_cards %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="fw-bold mb-0 text-truncate" title="{{ card.project.title }}">
+                                {{ card.project.title }}
+                            </h5>
+                            <span class="badge {% if card.project.status == 'Closed' %}bg-secondary{% elif card.project.status == 'Assigned' %}bg-primary{% else %}bg-info text-dark{% endif %}">
+                                {{ card.project.get_status_display }}
+                            </span>
+                        </div>
+
+                        <p class="text-muted small mb-3 text-truncate-2">
+                            {{ card.project.description|truncatewords:20 }}
+                        </p>
+
+                        <!-- Progress / Metrics summary -->
+                        <div class="bg-light p-3 rounded-3 mb-3 small">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Total Students:</span>
+                                <strong>{{ card.total_students }}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Evaluated:</span>
+                                <span class="badge bg-success">{{ card.evaluated }} / {{ card.total_students }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Under Review:</span>
+                                <span class="badge bg-warning text-dark">{{ card.under_review }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Submitted (Unreviewed):</span>
+                                <span class="badge bg-info text-dark">{{ card.submitted }}</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto pt-2 d-flex gap-2">
+                            <a href="{% url 'reviews:marks_report' card.project.id %}" class="btn btn-outline-primary btn-sm flex-fill">
+                                <i class="bi bi-bar-chart-line me-1"></i> Marks Report
+                            </a>
+                            <a href="{% url 'submissions:submission_list' %}?project={{ card.project.id }}" class="btn btn-primary btn-sm flex-fill">
+                                <i class="bi bi-eye me-1"></i> Review Work
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="card shadow-sm border-0 text-center py-5">
+                <div class="card-body">
+                    <i class="bi bi-journal-x display-5 text-muted mb-3 d-block"></i>
+                    <h5 class="fw-bold">No Projects Found</h5>
+                    <p class="text-muted">Create a project and allocate students to start conducting evaluations.</p>
+                    <a href="{% url 'projects:create_project' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i> Create Project
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
