@@ -44,12 +44,12 @@
                         {% if user.is_teacher %}
                             <!-- Teacher Navigation Links -->
                             <li class="nav-item">
-                                <a class="nav-link" href="/projects/">
+                                <a class="nav-link" href="{% url 'projects:project_list' %}">
                                     <i class="bi bi-folder2-open me-1"></i> Projects
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/assignments/">
+                                <a class="nav-link" href="{% url 'assignments:assign_project_select' %}">
                                     <i class="bi bi-person-lines-fill me-1"></i> Assignments
                                 </a>
                             </li>
@@ -71,7 +71,7 @@
                         {% elif user.is_student %}
                             <!-- Student Navigation Links -->
                             <li class="nav-item">
-                                <a class="nav-link" href="/assignments/my/">
+                                <a class="nav-link" href="{% url 'assignments:my_assignments' %}">
                                     <i class="bi bi-journal-bookmark me-1"></i> My Projects
                                 </a>
                             </li>

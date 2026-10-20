@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }} - PMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Project Summary Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <h2 class="h3 fw-bold mb-1">{{ project.title }}</h2>
+                        <span class="text-muted small">Created on {{ project.created_at|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'projects:project_edit' project.id %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil me-1"></i> Edit
+                        </a>
+                        <a href="{% url 'assignments:assign_students' project.id %}" class="btn btn-success btn-sm">
+                            <i class="bi bi-person-plus me-1"></i> Assign Students
+                        </a>
+                        <a href="{% url 'projects:project_report' project.id %}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-file-earmark-bar-graph me-1"></i> Report
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row g-3 py-2 bg-light rounded-3 mb-4">
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Status</span>
+                        {% if project.status == 'Draft' %}
+                            <span class="badge bg-secondary">Draft</span>
+                        {% elif project.status == 'Assigned' %}
+                            <span class="badge bg-primary">Assigned</span>
+                        {% elif project.status == 'Closed' %}
+                            <span class="badge bg-dark">Closed</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Deadline</span>
+                        <span class="{% if project.is_past_deadline %}text-danger fw-semibold{% endif %}">
+                            <i class="bi bi-calendar-event me-1"></i>{{ project.deadline|date:"M d, Y H:i" }}
+                        </span>
+                    </div>
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Assigned Students</span>
+                        <strong>{{ assignments.count }}</strong>
+                    </div>
+                </div>
+
+                <h5 class="fw-bold mb-2">Description</h5>
+                <p class="text-secondary" style="white-space: pre-wrap;">{{ project.description }}</p>
+            </div>
+        </div>
+
+        <!-- Assigned Students Section -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-people me-2 text-primary"></i>Assigned Students</h5>
+                <a href="{% url 'assignments:assign_students' project.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-circle me-1"></i> Add Students
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Student Name</th>
+                            <th>Roll Number</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Assigned Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if assignments %}
+                            {% for a in assignments %}
+                                <tr>
+                                    <td class="ps-3 fw-bold">{{ a.student.get_display_name }}</td>
+                                    <td>{{ a.student.roll_no|default:"-" }}</td>
+                                    <td>{{ a.student.email }}</td>
+                                    <td>
+                                        <span class="badge bg-info text-dark">{{ a.get_status_display }}</span>
+                                    </td>
+                                    <td class="text-muted small">{{ a.assigned_on|date:"M d, Y" }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    No students assigned to this project yet. Click <strong>Add Students</strong> above.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-start">
+            <a href="{% url 'projects:project_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Projects
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

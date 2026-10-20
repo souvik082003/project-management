@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }} - Assignment Details{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <span class="text-muted small d-block">Academic Project</span>
+                        <h2 class="h3 fw-bold mb-1">{{ project.title }}</h2>
+                    </div>
+                    <div>
+                        {% if assignment.status == 'Assigned' %}
+                            <span class="badge bg-secondary fs-6 px-3 py-2">{{ assignment.get_status_display }}</span>
+                        {% elif assignment.status == 'In progress' %}
+                            <span class="badge bg-primary fs-6 px-3 py-2">{{ assignment.get_status_display }}</span>
+                        {% elif assignment.status == 'Overdue' %}
+                            <span class="badge bg-danger fs-6 px-3 py-2">{{ assignment.get_status_display }}</span>
+                        {% elif assignment.status == 'Submitted' %}
+                            <span class="badge bg-info text-dark fs-6 px-3 py-2">{{ assignment.get_status_display }}</span>
+                        {% elif assignment.status == 'Under review' %}
+                            <span class="badge bg-warning text-dark fs-6 px-3 py-2">{{ assignment.get_status_display }}</span>
+                        {% elif assignment.status == 'Evaluated' %}
+                            <span class="badge bg-success fs-6 px-3 py-2">{{ assignment.get_status_display }}</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border fs-6 px-3 py-2">{{ assignment.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row g-3 py-3 bg-light rounded-3 mb-4">
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Supervisor / Teacher</span>
+                        <strong>{{ project.created_by.get_display_name }}</strong>
+                        <div class="small text-muted">{{ project.created_by.email }}</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Deadline</span>
+                        <strong class="{% if assignment.is_past_deadline %}text-danger{% endif %}">
+                            {{ project.deadline|date:"M d, Y H:i" }}
+                        </strong>
+                        <div class="small text-muted">
+                            {% if assignment.is_past_deadline %}
+                                <span class="text-danger fw-semibold">Deadline passed</span>
+                            {% else %}
+                                <span>{{ assignment.days_remaining }} days remaining</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <span class="text-muted small d-block">Assigned On</span>
+                        <strong>{{ assignment.assigned_on|date:"M d, Y" }}</strong>
+                    </div>
+                </div>
+
+                <h5 class="fw-bold mb-2">Project Description &amp; Scope</h5>
+                <p class="text-secondary mb-4" style="white-space: pre-wrap;">{{ project.description }}</p>
+
+                <!-- Action shortcuts for future sprints -->
+                <div class="border-top pt-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-lightning-charge me-1 text-warning"></i>Project Actions</h6>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="/progress/update/" class="btn btn-outline-primary">
+                            <i class="bi bi-speedometer2 me-1"></i> Update Progress
+                        </a>
+                        <a href="/submissions/upload/" class="btn btn-outline-success">
+                            <i class="bi bi-cloud-arrow-up me-1"></i> Submit Work
+                        </a>
+                        <a href="/reviews/feedback/" class="btn btn-outline-secondary">
+                            <i class="bi bi-chat-left-quote me-1"></i> View Feedback
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-0 px-4 pb-4">
+                <a href="{% url 'assignments:my_assignments' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to My Projects
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

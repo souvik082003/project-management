@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Assign Projects - PMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="h3 fw-bold mb-1"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Assign Projects</h2>
+        <p class="text-muted small mb-0">Select a project to allocate students</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% if projects %}
+        {% for project in projects %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-0 border-top border-primary border-3">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-secondary">{{ project.get_status_display }}</span>
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-people me-1"></i>{{ project.assignment_count }} assigned
+                            </span>
+                        </div>
+                        <h5 class="card-title fw-bold">{{ project.title }}</h5>
+                        <p class="card-text text-muted small flex-grow-1">
+                            {{ project.description|truncatewords:20 }}
+                        </p>
+                        <div class="small text-muted mb-3">
+                            <i class="bi bi-clock me-1"></i>Deadline: {{ project.deadline|date:"M d, Y H:i" }}
+                        </div>
+                        <a href="{% url 'assignments:assign_students' project.id %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-person-plus me-1"></i> Assign Students
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12 text-center py-5">
+            <p class="text-muted">You have not created any projects yet.</p>
+            <a href="{% url 'projects:project_create' %}" class="btn btn-primary">Create Your First Project</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -2,6 +2,18 @@
 
 All notable changes to the Academic Project Management System (PMS) will be documented in this file.
 
+## [Prompt 2] - Projects and Assignments Apps (UC03, UC04, UC05, UC06)
+### Added
+- Implemented `Project` model with `title`, `description`, `deadline`, `status` (`Draft`, `Assigned`, `Closed`), and `created_by` foreign key with migrations.
+- Implemented `ProjectAssignment` model with `project`, `student`, `assigned_on`, `status` (`Assigned`, `In progress`, `Overdue`, `Submitted`, `Under review`, `Revision requested`, `Evaluated`), `unique_together` constraint, and `days_remaining` property.
+- Implemented strict state machine transition services for `Project` (`transition()`) and `ProjectAssignment` (`transition()`), raising custom `InvalidTransition` on illegal transitions.
+- Implemented UC03 (Create/Edit Project): teacher-only project creation and editing with future deadline validation, ownership checks (404 for other teachers' projects), status filtering, and pagination.
+- Implemented UC04 (Assign Project): student selection with search by name/roll no, duplicate skipping, summary messaging ("N assigned, M already assigned"), automatic transition from `Draft` to `Assigned` on first assignment, and notification stub `notify_assignment()`.
+- Implemented UC05 (View Assigned Project): student dashboard showing assigned projects, supervisor, deadline, status badge, days remaining, and strict 404 security checks preventing unauthorized viewing.
+- Implemented UC06 (Generate Project Report): student evaluation summary table with print-friendly formatting and "Download CSV" export.
+- Implemented `mark_overdue_assignments()` and management command `python manage.py mark_overdue` to transition past-deadline in-progress assignments to `Overdue`.
+- Comprehensive test suites in `projects/tests/` and `assignments/tests/` verifying all 11 required behaviors (38 total tests passing with 90% overall code coverage).
+
 ## [Prompt 1] - Accounts App & Authentication (UC01 Register, UC02 Login)
 ### Added
 - Implemented custom `User` model with `email` as `USERNAME_FIELD`, `name`, `role` (student/teacher), `department`, `roll_no` (students), `employee_id` (teachers), and lockout tracking (`failed_login_attempts`, `locked_until`).
