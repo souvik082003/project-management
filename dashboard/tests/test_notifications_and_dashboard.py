@@ -1,30 +1,33 @@
 import os
 import shutil
 import tempfile
-from decimal import Decimal
 from datetime import timedelta
 from unittest.mock import patch
 
-from django.test import TestCase, override_settings
 from django.core import mail
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import PermissionDenied
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import UserRole
 from accounts.services import register_user
-from projects.models import Project, ProjectStatus
-from projects.services import create_project
 from assignments.models import AssignmentStatus, ProjectAssignment
-from assignments.services import assign_students_to_project, transition, send_deadline_reminders
-from submissions.services import submit_file, teacher_open_submission
-from reviews.services import give_feedback, assign_marks
+from assignments.services import (
+    assign_students_to_project,
+    send_deadline_reminders,
+)
 from dashboard.models import Notification
 from dashboard.services import (
-    get_student_dashboard_data, get_teacher_dashboard_data,
-    mark_notification_as_read, mark_all_notifications_as_read
+    get_student_dashboard_data,
+    get_teacher_dashboard_data,
+    mark_all_notifications_as_read,
+    mark_notification_as_read,
 )
+from projects.services import create_project
+from reviews.services import assign_marks, give_feedback
+from submissions.services import submit_file, teacher_open_submission
 
 
 class DashboardAndNotificationsTests(TestCase):
@@ -53,28 +56,28 @@ class DashboardAndNotificationsTests(TestCase):
             email="prof.smith@example.edu",
             password="StrongPassword#2024",
             role=UserRole.TEACHER,
-            employee_id="T-PROF-01"
+            employee_id="T-PROF-01",
         )
         self.student = register_user(
             name="Charlie Brown",
             email="charlie@example.edu",
             password="StrongPassword#2024",
             role=UserRole.STUDENT,
-            roll_no="STU-01"
+            roll_no="STU-01",
         )
         self.student_2 = register_user(
             name="Dana White",
             email="dana@example.edu",
             password="StrongPassword#2024",
             role=UserRole.STUDENT,
-            roll_no="STU-02"
+            roll_no="STU-02",
         )
 
         self.project = create_project(
             teacher=self.teacher,
             title="Distributed Raft Node",
             description="Consensus engine implementation",
-            deadline=timezone.now() + timedelta(days=10)
+            deadline=timezone.now() + timedelta(days=10),
         )
         # Clear outbox
         mail.outbox.clear()
@@ -136,7 +139,7 @@ class DashboardAndNotificationsTests(TestCase):
         self.assertIn("Great progress", email.body)
 
         # In-app alert for student
-        notif = Notification.objects.filter(user=self.student).order_by('-created_at').first()
+        notif = Notification.objects.filter(user=self.student).order_by("-created_at").first()
         self.assertIn("feedback given", notif.message.lower())
 
     def test_notification_on_marks_published(self):
@@ -156,12 +159,12 @@ class DashboardAndNotificationsTests(TestCase):
         self.assertIn("88", email.body)
 
         # In-app alert for student
-        notif = Notification.objects.filter(user=self.student).order_by('-created_at').first()
+        notif = Notification.objects.filter(user=self.student).order_by("-created_at").first()
         self.assertIn("88", notif.message)
 
     def test_email_failure_does_not_break_assignment_submission_feedback_or_marks(self):
         """Mocking send_mail failure guarantees business operations proceed uninterrupted."""
-        with patch('django.core.mail.send_mail', side_effect=RuntimeError("SMTP Down")):
+        with patch("django.core.mail.send_mail", side_effect=RuntimeError("SMTP Down")):
             # 1. Assignment
             assign_students_to_project(self.teacher, self.project, [self.student.id])
             assign = ProjectAssignment.objects.get(project=self.project, student=self.student)
@@ -191,16 +194,16 @@ class DashboardAndNotificationsTests(TestCase):
 
         # Verify Teacher Dashboard Data
         teacher_data = get_teacher_dashboard_data(self.teacher)
-        self.assertEqual(teacher_data['total_projects'], 1)
-        self.assertEqual(teacher_data['total_students_assigned'], 2)
-        self.assertEqual(teacher_data['submissions_waiting'].count(), 1)
-        self.assertEqual(teacher_data['status_counts'][AssignmentStatus.SUBMITTED], 1)
-        self.assertEqual(teacher_data['status_counts'][AssignmentStatus.ASSIGNED], 1)
+        self.assertEqual(teacher_data["total_projects"], 1)
+        self.assertEqual(teacher_data["total_students_assigned"], 2)
+        self.assertEqual(teacher_data["submissions_waiting"].count(), 1)
+        self.assertEqual(teacher_data["status_counts"][AssignmentStatus.SUBMITTED], 1)
+        self.assertEqual(teacher_data["status_counts"][AssignmentStatus.ASSIGNED], 1)
 
         # Verify Student Dashboard Data
         student_data = get_student_dashboard_data(self.student)
-        self.assertEqual(student_data['total_assignments'], 1)
-        self.assertEqual(student_data['status_counts'][AssignmentStatus.SUBMITTED], 1)
+        self.assertEqual(student_data["total_assignments"], 1)
+        self.assertEqual(student_data["status_counts"][AssignmentStatus.SUBMITTED], 1)
 
     def test_student_cannot_see_teacher_dashboard_data(self):
         """Student attempting to call teacher metrics or view teacher controls is blocked."""
@@ -208,7 +211,7 @@ class DashboardAndNotificationsTests(TestCase):
             get_teacher_dashboard_data(self.student)
 
         self.client.force_login(self.student)
-        resp = self.client.get(reverse('dashboard:dashboard'))
+        resp = self.client.get(reverse("dashboard:dashboard"))
         self.assertEqual(resp.status_code, 200)
         # Verify student template is rendered, not teacher supervisory controls
         self.assertContains(resp, "Student Dashboard")
@@ -221,7 +224,7 @@ class DashboardAndNotificationsTests(TestCase):
             teacher=self.teacher,
             title="Urgent Project",
             description="Due soon",
-            deadline=timezone.now() + timedelta(hours=30)
+            deadline=timezone.now() + timedelta(hours=30),
         )
         assign_students_to_project(self.teacher, proj_soon, [self.student.id])
 
@@ -230,7 +233,7 @@ class DashboardAndNotificationsTests(TestCase):
             teacher=self.teacher,
             title="Far Away Project",
             description="Due later",
-            deadline=timezone.now() + timedelta(days=6)
+            deadline=timezone.now() + timedelta(days=6),
         )
         assign_students_to_project(self.teacher, proj_far, [self.student_2.id])
 
@@ -250,11 +253,7 @@ class DashboardAndNotificationsTests(TestCase):
 
     def test_unread_count_and_mark_read_view(self):
         """In-app notifications unread counter increments and decrements on read."""
-        notif = Notification.objects.create(
-            user=self.student,
-            message="Test notification alert",
-            link="/dashboard/"
-        )
+        notif = Notification.objects.create(user=self.student, message="Test notification alert", link="/dashboard/")
         self.assertEqual(self.student.notifications.filter(is_read=False).count(), 1)
 
         # Mark single as read

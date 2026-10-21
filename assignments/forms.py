@@ -6,8 +6,8 @@ User = get_user_model()
 
 class AssignStudentsForm(forms.Form):
     student_ids = forms.ModelMultipleChoiceField(
-        queryset=User.objects.filter(role='student').order_by('name'),
+        queryset=User.objects.filter(role="student").order_by("name"),
         widget=forms.CheckboxSelectMultiple,
         required=True,
-        error_messages={'required': 'Please select at least one student to assign.'}
+        error_messages={"required": "Please select at least one student to assign."},
     )

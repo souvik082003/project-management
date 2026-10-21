@@ -3,23 +3,26 @@ Business logic service layer for reviews module.
 Handles feedback giving, revision requests, mark assignment, grading rules,
 marks reporting, and automated project closure transitions.
 """
+
 import csv
 import io
 import logging
 from decimal import Decimal
+
 from django.conf import settings
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.http import Http404
-from accounts.models import UserRole
-from projects.models import Project, ProjectStatus
-from projects import services as project_services
-from assignments.models import ProjectAssignment, AssignmentStatus
-from assignments import services as assignment_services
-from submissions.models import Submission
-from .models import Feedback, Marks, get_grade_band
 
-logger = logging.getLogger('pms')
+from assignments import services as assignment_services
+from assignments.models import AssignmentStatus, ProjectAssignment
+from projects import services as project_services
+from projects.models import Project, ProjectStatus
+from submissions.models import Submission
+
+from .models import Feedback, Marks
+
+logger = logging.getLogger("pms")
 
 
 def notify_student_new_feedback(feedback: Feedback) -> None:
@@ -29,6 +32,7 @@ def notify_student_new_feedback(feedback: Feedback) -> None:
     """
     try:
         from dashboard import notifications as dashboard_notifications
+
         dashboard_notifications.notify_feedback(feedback)
     except Exception as err:
         logger.warning(f"Feedback notification failed (non-blocking): {err}")
@@ -41,6 +45,7 @@ def notify_student_marks_assigned(marks: Marks) -> None:
     """
     try:
         from dashboard import notifications as dashboard_notifications
+
         dashboard_notifications.notify_marks(marks)
     except Exception as err:
         logger.warning(f"Marks notification failed (non-blocking): {err}")
@@ -52,7 +57,7 @@ def give_feedback(submission: Submission, teacher, comments: str, request_revisi
     If request_revision is True, assignment transitions Under review -> Revision requested;
     otherwise it remains Under review.
     """
-    if not getattr(teacher, 'is_teacher', False):
+    if not getattr(teacher, "is_teacher", False):
         raise PermissionDenied("Only teachers can submit review feedback.")
 
     assignment = submission.assignment
@@ -74,10 +79,7 @@ def give_feedback(submission: Submission, teacher, comments: str, request_revisi
 
     with transaction.atomic():
         feedback = Feedback.objects.create(
-            submission=submission,
-            teacher=teacher,
-            comments=comments,
-            requested_revision=request_revision
+            submission=submission, teacher=teacher, comments=comments, requested_revision=request_revision
         )
 
         if request_revision:
@@ -96,7 +98,7 @@ def give_feedback(submission: Submission, teacher, comments: str, request_revisi
     return feedback
 
 
-def assign_marks(assignment: ProjectAssignment, teacher, score, max_score=Decimal('100.00')) -> Marks:
+def assign_marks(assignment: ProjectAssignment, teacher, score, max_score=Decimal("100.00")) -> Marks:
     """
     UC14 Assign Marks: allows teacher to grade an assignment with score and max_score.
     Rules:
@@ -108,7 +110,7 @@ def assign_marks(assignment: ProjectAssignment, teacher, score, max_score=Decima
       - On save, assignment transitions to Evaluated.
       - When ALL assignments of the project are Evaluated, project transitions to Closed.
     """
-    if not getattr(teacher, 'is_teacher', False):
+    if not getattr(teacher, "is_teacher", False):
         raise PermissionDenied("Only teachers can assign marks.")
 
     if assignment.project.created_by_id != teacher.id:
@@ -127,14 +129,14 @@ def assign_marks(assignment: ProjectAssignment, teacher, score, max_score=Decima
         raise ValidationError({"score": "Invalid numerical format for score."})
 
     try:
-        max_score_dec = Decimal(str(max_score)) if max_score is not None else Decimal('100.00')
+        max_score_dec = Decimal(str(max_score)) if max_score is not None else Decimal("100.00")
     except Exception:
         raise ValidationError({"max_score": "Invalid numerical format for max score."})
 
-    if score_dec < Decimal('0.00'):
+    if score_dec < Decimal("0.00"):
         raise ValidationError({"score": "Score cannot be negative."})
 
-    if max_score_dec <= Decimal('0.00'):
+    if max_score_dec <= Decimal("0.00"):
         raise ValidationError({"max_score": "Max score must be greater than zero."})
 
     if score_dec > max_score_dec:
@@ -156,12 +158,7 @@ def assign_marks(assignment: ProjectAssignment, teacher, score, max_score=Decima
             existing_marks.save()
             marks = existing_marks
         else:
-            marks = Marks(
-                assignment=assignment,
-                teacher=teacher,
-                score=score_dec,
-                max_score=max_score_dec
-            )
+            marks = Marks(assignment=assignment, teacher=teacher, score=score_dec, max_score=max_score_dec)
             marks.full_clean()
             marks.save()
 
@@ -185,8 +182,7 @@ def assign_marks(assignment: ProjectAssignment, teacher, score, max_score=Decima
         logger.warning(f"Marks notification failed (non-blocking): {notify_err}")
 
     logger.info(
-        f"Marks assigned for Assignment {assignment.id}: {marks.score}/{marks.max_score} "
-        f"by Teacher {teacher.email}"
+        f"Marks assigned for Assignment {assignment.id}: {marks.score}/{marks.max_score} by Teacher {teacher.email}"
     )
     return marks
 
@@ -196,14 +192,14 @@ def get_student_feedbacks(user, assignment_id: int = None):
     UC13 View Feedback: retrieves feedbacks for student's own submissions,
     newest first, grouped by submission version.
     """
-    if not getattr(user, 'is_student', False):
+    if not getattr(user, "is_student", False):
         raise PermissionDenied("Only students can access student feedback view.")
 
-    qs = Feedback.objects.filter(
-        submission__assignment__student=user
-    ).select_related(
-        'submission', 'submission__assignment', 'submission__assignment__project', 'teacher'
-    ).order_by('-submission__version', '-given_on')
+    qs = (
+        Feedback.objects.filter(submission__assignment__student=user)
+        .select_related("submission", "submission__assignment", "submission__assignment__project", "teacher")
+        .order_by("-submission__version", "-given_on")
+    )
 
     if assignment_id:
         # Verify ownership
@@ -218,13 +214,14 @@ def get_student_marks(user, assignment_id: int = None):
     """
     UC15 View Marks: returns marks for student's assignments, visible ONLY once Evaluated.
     """
-    if not getattr(user, 'is_student', False):
+    if not getattr(user, "is_student", False):
         raise PermissionDenied("Only students can access student marks view.")
 
-    qs = Marks.objects.filter(
-        assignment__student=user,
-        assignment__status=AssignmentStatus.EVALUATED
-    ).select_related('assignment', 'assignment__project', 'teacher').order_by('-graded_on')
+    qs = (
+        Marks.objects.filter(assignment__student=user, assignment__status=AssignmentStatus.EVALUATED)
+        .select_related("assignment", "assignment__project", "teacher")
+        .order_by("-graded_on")
+    )
 
     if assignment_id:
         try:
@@ -243,17 +240,23 @@ def get_student_marks(user, assignment_id: int = None):
     return qs
 
 
-def get_project_marks_report(project: Project, teacher) -> dict:
+def get_project_marks_report(project, teacher) -> dict:
     """
     UC16 Generate Marks Report: returns structured per-project report data
     including all student records, scores, grade bands, and statistical summaries.
     """
+    if isinstance(project, int):
+        try:
+            project = Project.objects.get(pk=project)
+        except Project.DoesNotExist:
+            raise Http404("Project not found.")
+
     if project.created_by_id != teacher.id:
         raise Http404("Project does not belong to your supervised projects.")
 
-    passing_pct = getattr(settings, 'PMS_PASSING_PERCENTAGE', 40.0)
+    passing_pct = getattr(settings, "PMS_PASSING_PERCENTAGE", 40.0)
 
-    assignments = project.assignments.select_related('student', 'marks').order_by('student__name')
+    assignments = project.assignments.select_related("student", "marks").order_by("student__name")
 
     records = []
     percentages = []
@@ -261,7 +264,7 @@ def get_project_marks_report(project: Project, teacher) -> dict:
     failing_count = 0
 
     for assign in assignments:
-        has_marks = hasattr(assign, 'marks') and assign.marks is not None
+        has_marks = hasattr(assign, "marks") and assign.marks is not None
         if has_marks:
             marks_obj = assign.marks
             pct = marks_obj.percentage
@@ -272,31 +275,35 @@ def get_project_marks_report(project: Project, teacher) -> dict:
             else:
                 failing_count += 1
 
-            records.append({
-                'assignment': assign,
-                'student': assign.student,
-                'has_marks': True,
-                'marks': marks_obj,
-                'score': marks_obj.score,
-                'max_score': marks_obj.max_score,
-                'percentage': pct,
-                'grade_band': marks_obj.grade_band,
-                'is_pass': is_pass,
-                'status': assign.get_status_display(),
-            })
+            records.append(
+                {
+                    "assignment": assign,
+                    "student": assign.student,
+                    "has_marks": True,
+                    "marks": marks_obj,
+                    "score": marks_obj.score,
+                    "max_score": marks_obj.max_score,
+                    "percentage": pct,
+                    "grade_band": marks_obj.grade_band,
+                    "is_pass": is_pass,
+                    "status": assign.get_status_display(),
+                }
+            )
         else:
-            records.append({
-                'assignment': assign,
-                'student': assign.student,
-                'has_marks': False,
-                'marks': None,
-                'score': None,
-                'max_score': None,
-                'percentage': None,
-                'grade_band': 'N/A',
-                'is_pass': None,
-                'status': assign.get_status_display(),
-            })
+            records.append(
+                {
+                    "assignment": assign,
+                    "student": assign.student,
+                    "has_marks": False,
+                    "marks": None,
+                    "score": None,
+                    "max_score": None,
+                    "percentage": None,
+                    "grade_band": "N/A",
+                    "is_pass": None,
+                    "status": assign.get_status_display(),
+                }
+            )
 
     total_count = assignments.count()
     evaluated_count = len(percentages)
@@ -311,21 +318,21 @@ def get_project_marks_report(project: Project, teacher) -> dict:
         lowest_pct = None
 
     stats = {
-        'total_students': total_count,
-        'evaluated_count': evaluated_count,
-        'pending_count': total_count - evaluated_count,
-        'average_percentage': avg_pct,
-        'highest_percentage': highest_pct,
-        'lowest_percentage': lowest_pct,
-        'passing_count': passing_count,
-        'failing_count': failing_count,
-        'passing_percentage_threshold': passing_pct,
+        "total_students": total_count,
+        "evaluated_count": evaluated_count,
+        "pending_count": total_count - evaluated_count,
+        "average_percentage": avg_pct,
+        "highest_percentage": highest_pct,
+        "lowest_percentage": lowest_pct,
+        "passing_count": passing_count,
+        "failing_count": failing_count,
+        "passing_percentage_threshold": passing_pct,
     }
 
     return {
-        'project': project,
-        'records': records,
-        'stats': stats,
+        "project": project,
+        "records": records,
+        "stats": stats,
     }
 
 
@@ -345,55 +352,67 @@ def generate_marks_csv(project: Project, teacher) -> str:
     writer.writerow([])
 
     # Table columns
-    writer.writerow([
-        "Student Name",
-        "Roll Number",
-        "Department",
-        "Assignment Status",
-        "Score",
-        "Max Score",
-        "Percentage",
-        "Grade Band",
-        "Result"
-    ])
+    writer.writerow(
+        [
+            "Student Name",
+            "Roll Number",
+            "Department",
+            "Assignment Status",
+            "Score",
+            "Max Score",
+            "Percentage",
+            "Grade Band",
+            "Result",
+        ]
+    )
 
-    for rec in report_data['records']:
-        student = rec['student']
-        if rec['has_marks']:
-            writer.writerow([
-                student.name,
-                student.roll_no or "-",
-                student.department or "-",
-                rec['status'],
-                rec['score'],
-                rec['max_score'],
-                f"{rec['percentage']}%",
-                rec['grade_band'],
-                "PASS" if rec['is_pass'] else "FAIL"
-            ])
+    for rec in report_data["records"]:
+        student = rec["student"]
+        if rec["has_marks"]:
+            writer.writerow(
+                [
+                    student.name,
+                    student.roll_no or "-",
+                    student.department or "-",
+                    rec["status"],
+                    rec["score"],
+                    rec["max_score"],
+                    f"{rec['percentage']}%",
+                    rec["grade_band"],
+                    "PASS" if rec["is_pass"] else "FAIL",
+                ]
+            )
         else:
-            writer.writerow([
-                student.name,
-                student.roll_no or "-",
-                student.department or "-",
-                rec['status'],
-                "-",
-                "-",
-                "-",
-                "N/A",
-                "PENDING"
-            ])
+            writer.writerow(
+                [
+                    student.name,
+                    student.roll_no or "-",
+                    student.department or "-",
+                    rec["status"],
+                    "-",
+                    "-",
+                    "-",
+                    "N/A",
+                    "PENDING",
+                ]
+            )
 
     writer.writerow([])
     writer.writerow(["Summary Statistics"])
-    stats = report_data['stats']
-    writer.writerow(["Total Assigned Students", stats['total_students']])
-    writer.writerow(["Evaluated Students", stats['evaluated_count']])
-    writer.writerow(["Pending Evaluation", stats['pending_count']])
-    writer.writerow(["Average Percentage", f"{stats['average_percentage']}%" if stats['average_percentage'] is not None else "N/A"])
-    writer.writerow(["Highest Percentage", f"{stats['highest_percentage']}%" if stats['highest_percentage'] is not None else "N/A"])
-    writer.writerow(["Lowest Percentage", f"{stats['lowest_percentage']}%" if stats['lowest_percentage'] is not None else "N/A"])
-    writer.writerow(["Passed Students", stats['passing_count']])
-    writer.writerow(["Failed Students", stats['failing_count']])
+    stats = report_data["stats"]
+    writer.writerow(["Total Assigned Students", stats["total_students"]])
+    writer.writerow(["Evaluated Students", stats["evaluated_count"]])
+    writer.writerow(["Pending Evaluation", stats["pending_count"]])
+    writer.writerow(
+        ["Average Percentage", f"{stats['average_percentage']}%" if stats["average_percentage"] is not None else "N/A"]
+    )
+    writer.writerow(
+        ["Highest Percentage", f"{stats['highest_percentage']}%" if stats["highest_percentage"] is not None else "N/A"]
+    )
+    writer.writerow(
+        ["Lowest Percentage", f"{stats['lowest_percentage']}%" if stats["lowest_percentage"] is not None else "N/A"]
+    )
+    writer.writerow(["Passed Students", stats["passing_count"]])
+    writer.writerow(["Failed Students", stats["failing_count"]])
 
     return output.getvalue()

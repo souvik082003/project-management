@@ -1,0 +1,26 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = [
+    ".venv",
+    "*/migrations/*",
+    "staticfiles",
+    "media",
+    "logs",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+    "F403",  # Star imports in settings
+    "F405",  # Star import definitions
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["E402", "F841"]
+"tests/*" = ["F841"]
+"*/tests/*" = ["F841"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["accounts", "projects", "assignments", "progress", "submissions", "reviews", "dashboard", "pms"]

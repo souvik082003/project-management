@@ -1,40 +1,30 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 from django.utils import timezone
 
 
 class AssignmentStatus(models.TextChoices):
-    ASSIGNED = 'Assigned', 'Assigned'
-    IN_PROGRESS = 'In progress', 'In progress'
-    OVERDUE = 'Overdue', 'Overdue'
-    SUBMITTED = 'Submitted', 'Submitted'
-    UNDER_REVIEW = 'Under review', 'Under review'
-    REVISION_REQUESTED = 'Revision requested', 'Revision requested'
-    EVALUATED = 'Evaluated', 'Evaluated'
+    ASSIGNED = "Assigned", "Assigned"
+    IN_PROGRESS = "In progress", "In progress"
+    OVERDUE = "Overdue", "Overdue"
+    SUBMITTED = "Submitted", "Submitted"
+    UNDER_REVIEW = "Under review", "Under review"
+    REVISION_REQUESTED = "Revision requested", "Revision requested"
+    EVALUATED = "Evaluated", "Evaluated"
 
 
 class ProjectAssignment(models.Model):
-    project = models.ForeignKey(
-        'projects.Project',
-        on_delete=models.CASCADE,
-        related_name='assignments'
-    )
-    student = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='project_assignments'
-    )
+    project = models.ForeignKey("projects.Project", on_delete=models.CASCADE, related_name="assignments")
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="project_assignments")
     assigned_on = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
-        max_length=30,
-        choices=AssignmentStatus.choices,
-        default=AssignmentStatus.ASSIGNED
+        max_length=30, choices=AssignmentStatus.choices, default=AssignmentStatus.ASSIGNED, db_index=True
     )
     deadline_reminder_sent = models.BooleanField(default=False, verbose_name="Deadline Reminder Sent")
 
     class Meta:
-        ordering = ['-assigned_on']
-        unique_together = ('project', 'student')
+        ordering = ["-assigned_on"]
+        unique_together = ("project", "student")
 
     @property
     def days_remaining(self):

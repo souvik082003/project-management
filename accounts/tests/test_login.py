@@ -1,10 +1,12 @@
+from datetime import timedelta
+
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from datetime import timedelta
-from accounts.models import User, UserRole
-from accounts.services import register_user, authenticate_user
-from django.core.exceptions import ValidationError
+
+from accounts.models import UserRole
+from accounts.services import authenticate_user, register_user
 
 
 class LoginAndLockoutTests(TestCase):
@@ -15,31 +17,29 @@ class LoginAndLockoutTests(TestCase):
             email="alice@example.edu",
             password=self.password,
             role=UserRole.STUDENT,
-            roll_no="S-001"
+            roll_no="S-001",
         )
         self.teacher = register_user(
             name="Dr. Bob Teacher",
             email="bob@example.edu",
             password=self.password,
             role=UserRole.TEACHER,
-            employee_id="T-001"
+            employee_id="T-001",
         )
 
     def test_successful_login_redirects_to_dashboard(self):
         """Successful login redirects user to dashboard."""
-        response = self.client.post(reverse('accounts:login'), {
-            'email': 'alice@example.edu',
-            'password': self.password
-        })
-        self.assertRedirects(response, '/dashboard/')
-        self.assertEqual(int(self.client.session['_auth_user_id']), self.student.pk)
+        response = self.client.post(
+            reverse("accounts:login"), {"email": "alice@example.edu", "password": self.password}
+        )
+        self.assertRedirects(response, "/dashboard/")
+        self.assertEqual(int(self.client.session["_auth_user_id"]), self.student.pk)
 
     def test_wrong_password_shows_generic_error(self):
         """Wrong password shows a generic error and does not log in."""
-        response = self.client.post(reverse('accounts:login'), {
-            'email': 'alice@example.edu',
-            'password': 'WrongPassword123'
-        })
+        response = self.client.post(
+            reverse("accounts:login"), {"email": "alice@example.edu", "password": "WrongPassword123"}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Invalid email or password.")
         self.student.refresh_from_db()
@@ -47,10 +47,9 @@ class LoginAndLockoutTests(TestCase):
 
     def test_nonexistent_email_shows_same_generic_error(self):
         """Nonexistent email shows identical error message without revealing existence."""
-        response = self.client.post(reverse('accounts:login'), {
-            'email': 'nonexistent@example.edu',
-            'password': 'SomePassword123'
-        })
+        response = self.client.post(
+            reverse("accounts:login"), {"email": "nonexistent@example.edu", "password": "SomePassword123"}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Invalid email or password.")
 
@@ -88,12 +87,7 @@ class LoginAndLockoutTests(TestCase):
         # After 15 minutes (at 15 minutes + 1 second), account unlocks with correct password
         sixteen_minutes_later = now + timedelta(minutes=15, seconds=1)
         self.assertFalse(self.student.is_locked(now=sixteen_minutes_later))
-        authenticated_user = authenticate_user(
-            None,
-            "alice@example.edu",
-            self.password,
-            now=sixteen_minutes_later
-        )
+        authenticated_user = authenticate_user(None, "alice@example.edu", self.password, now=sixteen_minutes_later)
         self.assertEqual(authenticated_user.pk, self.student.pk)
 
         # Upon successful authentication, failed attempts counter is reset

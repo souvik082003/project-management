@@ -3,9 +3,11 @@ Business logic service layer for accounts module.
 Contains all business rules for user registration, authentication, lockout protection,
 profile management, and password updates.
 """
-from django.core.exceptions import ValidationError
+
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.utils import timezone
+
 from .models import User, UserRole
 
 
@@ -16,7 +18,7 @@ def register_user(
     role: str,
     department: str = "",
     roll_no: str | None = None,
-    employee_id: str | None = None
+    employee_id: str | None = None,
 ) -> User:
     """
     Registers a new student or teacher user with validation.
@@ -66,17 +68,12 @@ def register_user(
         role=role,
         department=department,
         roll_no=roll_no,
-        employee_id=employee_id
+        employee_id=employee_id,
     )
     return user
 
 
-def authenticate_user(
-    request,
-    email: str,
-    password: str,
-    now=None
-) -> User:
+def authenticate_user(request, email: str, password: str, now=None) -> User:
     """
     Authenticates a user via email and password with brute-force lockout protection.
     Locks the account for 15 minutes after 5 consecutive failures.
@@ -93,7 +90,9 @@ def authenticate_user(
 
     if user:
         if user.is_locked(now=current_time):
-            raise ValidationError("Account is temporarily locked due to too many failed attempts. Please try again later.")
+            raise ValidationError(
+                "Account is temporarily locked due to too many failed attempts. Please try again later."
+            )
 
         if user.check_password(password):
             if not user.is_active:
@@ -103,7 +102,9 @@ def authenticate_user(
         else:
             user.record_failed_attempt(now=current_time)
             if user.is_locked(now=current_time):
-                raise ValidationError("Account is temporarily locked due to too many failed attempts. Please try again later.")
+                raise ValidationError(
+                    "Account is temporarily locked due to too many failed attempts. Please try again later."
+                )
             raise ValidationError("Invalid email or password.")
     else:
         # Nonexistent user: generic error message
@@ -122,7 +123,7 @@ def update_user_profile(user: User, name: str, department: str) -> User:
 
     user.name = name
     user.department = department
-    user.save(update_fields=['name', 'department'])
+    user.save(update_fields=["name", "department"])
     return user
 
 
@@ -139,4 +140,4 @@ def change_user_password(user: User, old_password: str, new_password: str) -> No
         raise ValidationError({"new_password": list(err.messages)})
 
     user.set_password(new_password)
-    user.save(update_fields=['password'])
+    user.save(update_fields=["password"])

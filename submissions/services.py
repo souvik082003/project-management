@@ -3,19 +3,23 @@ Business logic service layer for submissions module.
 Enforces file validation, content inspection, disk storage isolation, versioning,
 transactional cleanup, and permission-checked downloads.
 """
+
+import logging
 import os
 import re
 import uuid
-import logging
+
 from django.conf import settings
-from django.core.exceptions import ValidationError, PermissionDenied
-from django.db import transaction, models
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import models, transaction
 from django.http import Http404
-from assignments.models import ProjectAssignment, AssignmentStatus
+
 from assignments import services as assignment_services
+from assignments.models import AssignmentStatus, ProjectAssignment
+
 from .models import Submission
 
-logger = logging.getLogger('pms')
+logger = logging.getLogger("pms")
 
 # Statuses where students can submit files
 ALLOWED_SUBMISSION_STATUSES = {
@@ -41,11 +45,11 @@ def sanitise_filename(raw_filename: str) -> str:
         return "unnamed_file"
 
     # Extract base filename and remove directory markers
-    base = os.path.basename(raw_filename.replace('\\', '/'))
+    base = os.path.basename(raw_filename.replace("\\", "/"))
     # Remove leading dots to prevent hidden files
-    base = base.lstrip('.')
+    base = base.lstrip(".")
     # Keep only safe alphanumeric, dash, dot, and underscore
-    clean = re.sub(r'[^a-zA-Z0-9_.-]', '_', base)
+    clean = re.sub(r"[^a-zA-Z0-9_.-]", "_", base)
     return clean or "submission_file"
 
 
@@ -60,47 +64,55 @@ def validate_uploaded_file(uploaded_file) -> None:
         raise ValidationError({"file": "Uploaded file is empty."})
 
     # 2. Size limit check
-    max_size = getattr(settings, 'MAX_UPLOAD_SIZE', 10 * 1024 * 1024)
+    max_size = getattr(settings, "MAX_UPLOAD_SIZE", 10 * 1024 * 1024)
     if uploaded_file.size > max_size:
         max_mb = max_size // (1024 * 1024)
         raise ValidationError({"file": f"File size exceeds maximum permitted limit ({max_mb} MB)."})
 
     # 3. Extension check
-    allowed_exts = [e.lower().lstrip('.') for e in getattr(
-        settings, 'ALLOWED_UPLOAD_EXTENSIONS',
-        ['pdf', 'doc', 'docx', 'zip', 'ppt', 'pptx', 'txt', 'png', 'jpg']
-    )]
+    allowed_exts = [
+        e.lower().lstrip(".")
+        for e in getattr(
+            settings, "ALLOWED_UPLOAD_EXTENSIONS", ["pdf", "doc", "docx", "zip", "ppt", "pptx", "txt", "png", "jpg"]
+        )
+    ]
 
-    ext = os.path.splitext(uploaded_file.name)[1].lower().lstrip('.')
+    ext = os.path.splitext(uploaded_file.name)[1].lower().lstrip(".")
     if not ext or ext not in allowed_exts:
-        raise ValidationError({
-            "file": f"File extension '.{ext}' is not allowed. Allowed types: {', '.join(allowed_exts)}."
-        })
+        raise ValidationError(
+            {"file": f"File extension '.{ext}' is not allowed. Allowed types: {', '.join(allowed_exts)}."}
+        )
 
     # 4. Content inspection (file signatures & magic bytes)
     header = uploaded_file.read(512)
     uploaded_file.seek(0)  # Rewind pointer for subsequent read/write
 
     # Prohibit executables regardless of extension (Windows PE, Linux ELF, Mach-O)
-    if header.startswith(b'MZ'):
+    if header.startswith(b"MZ"):
         raise ValidationError({"file": "Executable PE binary files (.exe / .dll) are strictly prohibited."})
-    if header.startswith(b'\x7fELF'):
+    if header.startswith(b"\x7fELF"):
         raise ValidationError({"file": "Executable ELF binary files are strictly prohibited."})
-    if header.startswith(b'\xfe\xed\xfa\xce') or header.startswith(b'\xfe\xed\xfa\xcf') or header.startswith(b'\xcf\xfa\xed\xfe'):
+    if (
+        header.startswith(b"\xfe\xed\xfa\xce")
+        or header.startswith(b"\xfe\xed\xfa\xcf")
+        or header.startswith(b"\xcf\xfa\xed\xfe")
+    ):
         raise ValidationError({"file": "Mach-O binary files are strictly prohibited."})
 
     # Format-specific signature verification
-    if ext == 'pdf':
-        if not header.startswith(b'%PDF-'):
-            raise ValidationError({"file": "File signature does not match PDF format. File content is invalid or corrupted."})
-    elif ext == 'png':
-        if not header.startswith(b'\x89PNG\r\n\x1a\n'):
+    if ext == "pdf":
+        if not header.startswith(b"%PDF-"):
+            raise ValidationError(
+                {"file": "File signature does not match PDF format. File content is invalid or corrupted."}
+            )
+    elif ext == "png":
+        if not header.startswith(b"\x89PNG\r\n\x1a\n"):
             raise ValidationError({"file": "File signature does not match PNG image format."})
-    elif ext in ['jpg', 'jpeg']:
-        if not header.startswith(b'\xff\xd8\xff'):
+    elif ext in ["jpg", "jpeg"]:
+        if not header.startswith(b"\xff\xd8\xff"):
             raise ValidationError({"file": "File signature does not match JPEG image format."})
-    elif ext in ['zip', 'docx', 'pptx']:
-        if not header.startswith(b'PK\x03\x04'):
+    elif ext in ["zip", "docx", "pptx"]:
+        if not header.startswith(b"PK\x03\x04"):
             raise ValidationError({"file": f"File signature does not match {ext.upper()} archive/document format."})
 
 
@@ -111,6 +123,7 @@ def notify_teacher_new_submission(submission: Submission) -> None:
     """
     try:
         from dashboard import notifications as dashboard_notifications
+
         dashboard_notifications.notify_teacher_new_submission(submission)
     except Exception as err:
         logger.warning(f"Submission notification failed (non-blocking): {err}")
@@ -127,15 +140,13 @@ def submit_file(assignment: ProjectAssignment, uploaded_file, user) -> Submissio
         raise Http404("Assignment not found.")
 
     if assignment.status in DISALLOWED_SUBMISSION_STATUSES:
-        raise ValidationError(
-            f"Submissions are not permitted while project is '{assignment.get_status_display()}'."
-        )
+        raise ValidationError(f"Submissions are not permitted while project is '{assignment.get_status_display()}'.")
 
     # Validate file
     validate_uploaded_file(uploaded_file)
 
     safe_name = sanitise_filename(uploaded_file.name)
-    max_version = assignment.submissions.aggregate(models.Max('version'))['version__max'] or 0
+    max_version = assignment.submissions.aggregate(models.Max("version"))["version__max"] or 0
     version = max_version + 1
 
     file_uuid = uuid.uuid4().hex
@@ -146,9 +157,8 @@ def submit_file(assignment: ProjectAssignment, uploaded_file, user) -> Submissio
     try:
         # 1. Save file to disk
         os.makedirs(os.path.dirname(full_dest_path), exist_ok=True)
-        with open(full_dest_path, 'wb+') as destination:
-            for chunk in uploaded_file.chunks():
-                destination.write(chunk)
+        with open(full_dest_path, "wb+") as destination:
+            destination.writelines(uploaded_file.chunks())
         saved_disk_path = full_dest_path
 
         # 2. Database transaction: create Submission and transition state machine
@@ -158,14 +168,14 @@ def submit_file(assignment: ProjectAssignment, uploaded_file, user) -> Submissio
                 file_path=relative_path,
                 file_name=safe_name,
                 file_size=uploaded_file.size,
-                version=version
+                version=version,
             )
 
             # State machine transitions
-            if assignment.status == AssignmentStatus.ASSIGNED:
-                assignment_services.transition(assignment, AssignmentStatus.IN_PROGRESS)
-                assignment_services.transition(assignment, AssignmentStatus.SUBMITTED)
-            elif assignment.status == AssignmentStatus.REVISION_REQUESTED:
+            if (
+                assignment.status == AssignmentStatus.ASSIGNED
+                or assignment.status == AssignmentStatus.REVISION_REQUESTED
+            ):
                 assignment_services.transition(assignment, AssignmentStatus.IN_PROGRESS)
                 assignment_services.transition(assignment, AssignmentStatus.SUBMITTED)
             elif assignment.status in [AssignmentStatus.IN_PROGRESS, AssignmentStatus.OVERDUE]:
@@ -190,11 +200,17 @@ def submit_file(assignment: ProjectAssignment, uploaded_file, user) -> Submissio
         raise
 
 
-def teacher_open_submission(submission: Submission, teacher) -> Submission:
+def teacher_open_submission(submission, teacher) -> Submission:
     """
     Teacher opens/views a submission.
     Transitions assignment Submitted -> Under review on the first inspection.
     """
+    if isinstance(submission, int):
+        try:
+            submission = Submission.objects.select_related("assignment", "assignment__project").get(pk=submission)
+        except Submission.DoesNotExist:
+            raise Http404("Submission not found.")
+
     if submission.assignment.project.created_by_id != teacher.id:
         raise Http404("Submission not found.")
 
@@ -211,17 +227,17 @@ def get_submission_for_download(submission_id: int, user) -> tuple[Submission, s
     Students can only download their own submissions; teachers only their own projects' files.
     """
     try:
-        submission = Submission.objects.select_related(
-            'assignment', 'assignment__project', 'assignment__student'
-        ).get(pk=submission_id)
+        submission = Submission.objects.select_related("assignment", "assignment__project", "assignment__student").get(
+            pk=submission_id
+        )
     except Submission.DoesNotExist:
         raise Http404("Submission not found.")
 
     # Role permission check
-    if getattr(user, 'is_student', False):
+    if getattr(user, "is_student", False):
         if submission.assignment.student_id != user.id:
             raise PermissionDenied("You are not permitted to download this submission.")
-    elif getattr(user, 'is_teacher', False):
+    elif getattr(user, "is_teacher", False):
         if submission.assignment.project.created_by_id != user.id:
             raise Http404("Submission not found.")
         # If teacher downloads, trigger Submitted -> Under review

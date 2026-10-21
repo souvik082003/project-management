@@ -1,0 +1,56 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        pip install ruff bandit
+
+    - name: Code Quality & Linting (Ruff)
+      run: |
+        ruff check .
+        ruff format --check .
+
+    - name: Security SAST Scan (Bandit)
+      run: |
+        bandit -r . -x ./.venv,./tests,./*/tests/*,./scripts -ll
+
+    - name: Django System & Migration Integrity Check
+      env:
+        SECRET_KEY: "ci-insecure-dummy-key-for-django-check-only-entropy-check"
+      run: |
+        python manage.py check
+        python manage.py makemigrations --check --dry-run
+
+    - name: Production Deployment Security Check
+      run: |
+        python manage.py check --deploy --settings=pms.settings.prod
+
+    - name: Execute Test Suite with Services Coverage Check (>= 85%)
+      run: |
+        coverage run manage.py test
+        coverage report -m --include="*services.py" --fail-under=85

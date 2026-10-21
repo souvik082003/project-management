@@ -1,18 +1,21 @@
+from datetime import timedelta
+
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from datetime import timedelta
-from django.core.exceptions import ValidationError
+
 from accounts.models import UserRole
 from accounts.services import register_user
-from projects.services import create_project
 from assignments.models import AssignmentStatus, ProjectAssignment
 from assignments.services import assign_students_to_project, transition
-from progress.models import ProgressUpdate
 from progress.services import (
-    add_progress_update, get_progress_summary,
-    get_project_progress_report, generate_progress_csv_report
+    add_progress_update,
+    generate_progress_csv_report,
+    get_progress_summary,
+    get_project_progress_report,
 )
+from projects.services import create_project
 
 
 class ProgressTests(TestCase):
@@ -22,35 +25,35 @@ class ProgressTests(TestCase):
             email="teacher.one@example.edu",
             password="StrongPassword#2024",
             role=UserRole.TEACHER,
-            employee_id="T-01"
+            employee_id="T-01",
         )
         self.teacher_2 = register_user(
             name="Teacher Two",
             email="teacher.two@example.edu",
             password="StrongPassword#2024",
             role=UserRole.TEACHER,
-            employee_id="T-02"
+            employee_id="T-02",
         )
         self.student_1 = register_user(
             name="Student One",
             email="student.one@example.edu",
             password="StrongPassword#2024",
             role=UserRole.STUDENT,
-            roll_no="S-01"
+            roll_no="S-01",
         )
         self.student_2 = register_user(
             name="Student Two",
             email="student.two@example.edu",
             password="StrongPassword#2024",
             role=UserRole.STUDENT,
-            roll_no="S-02"
+            roll_no="S-02",
         )
         self.future_deadline = timezone.now() + timedelta(days=14)
         self.project_1 = create_project(
             teacher=self.teacher_1,
             title="Database Engine",
             description="Build storage engine",
-            deadline=self.future_deadline
+            deadline=self.future_deadline,
         )
         assign_students_to_project(self.teacher_1, self.project_1, [self.student_1.id])
         self.assignment_1 = ProjectAssignment.objects.get(project=self.project_1, student=self.student_1)
@@ -63,7 +66,7 @@ class ProgressTests(TestCase):
             student=self.student_1,
             assignment=self.assignment_1,
             percent_complete=25,
-            remarks="Completed initial schema and storage models."
+            remarks="Completed initial schema and storage models.",
         )
         self.assertEqual(update.percent_complete, 25)
         self.assignment_1.refresh_from_db()
@@ -71,10 +74,7 @@ class ProgressTests(TestCase):
 
         # Subsequent valid update with higher percentage
         update_2 = add_progress_update(
-            student=self.student_1,
-            assignment=self.assignment_1,
-            percent_complete=50,
-            remarks="Indexed pages."
+            student=self.student_1, assignment=self.assignment_1, percent_complete=50, remarks="Indexed pages."
         )
         self.assertEqual(update_2.percent_complete, 50)
         self.assignment_1.refresh_from_db()
@@ -102,8 +102,8 @@ class ProgressTests(TestCase):
         """A student cannot submit progress on another student's assignment."""
         self.client.force_login(self.student_2)
         response = self.client.post(
-            reverse('progress:update_progress', kwargs={'assignment_id': self.assignment_1.pk}),
-            {'percent_complete': 30, 'remarks': 'Hacking update'}
+            reverse("progress:update_progress", kwargs={"assignment_id": self.assignment_1.pk}),
+            {"percent_complete": 30, "remarks": "Hacking update"},
         )
         self.assertEqual(response.status_code, 404)
 
@@ -145,13 +145,13 @@ class ProgressTests(TestCase):
             teacher=self.teacher_2,
             title="Teacher 2 Project",
             description="Other project",
-            deadline=self.future_deadline
+            deadline=self.future_deadline,
         )
         assign_students_to_project(self.teacher_2, project_2, [self.student_2.id])
 
         # Teacher 1 monitor view
         summary_t1 = get_progress_summary(self.teacher_1)
-        project_ids_t1 = [item['project'].id for item in summary_t1]
+        project_ids_t1 = [item["project"].id for item in summary_t1]
         self.assertIn(self.project_1.id, project_ids_t1)
         self.assertNotIn(project_2.id, project_ids_t1)
 
@@ -165,14 +165,14 @@ class ProgressTests(TestCase):
         summary = get_progress_summary(self.teacher_1, project_id=self.project_1.id)
         self.assertEqual(len(summary), 1)
         # Stale because no update for 10 days
-        self.assertTrue(summary[0]['is_stale'])
-        self.assertFalse(summary[0]['is_overdue'])
+        self.assertTrue(summary[0]["is_stale"])
+        self.assertFalse(summary[0]["is_overdue"])
 
         # Now mark assignment as Overdue
         transition(self.assignment_1, AssignmentStatus.IN_PROGRESS)
         transition(self.assignment_1, AssignmentStatus.OVERDUE)
         summary_overdue = get_progress_summary(self.teacher_1, project_id=self.project_1.id)
-        self.assertTrue(summary_overdue[0]['is_overdue'])
+        self.assertTrue(summary_overdue[0]["is_overdue"])
 
     def test_report_averages_and_csv_generation(self):
         """Progress report computes correct averages, overdue counts, and CSV content."""
@@ -184,8 +184,8 @@ class ProgressTests(TestCase):
         add_progress_update(self.student_2, a2, 40)
 
         report = get_project_progress_report(self.teacher_1, self.project_1.id)
-        self.assertEqual(report['total_students'], 2)
-        self.assertEqual(report['avg_completion'], 50.0)
+        self.assertEqual(report["total_students"], 2)
+        self.assertEqual(report["avg_completion"], 50.0)
 
         # CSV report
         csv_text = generate_progress_csv_report(self.teacher_1, self.project_1.id)
@@ -198,10 +198,10 @@ class ProgressTests(TestCase):
         """Student cannot access teacher monitor or report views (403 Forbidden)."""
         self.client.force_login(self.student_1)
 
-        monitor_resp = self.client.get(reverse('progress:monitor_progress'))
+        monitor_resp = self.client.get(reverse("progress:monitor_progress"))
         self.assertEqual(monitor_resp.status_code, 403)
 
-        report_resp = self.client.get(reverse('progress:progress_report', kwargs={'project_id': self.project_1.pk}))
+        report_resp = self.client.get(reverse("progress:progress_report", kwargs={"project_id": self.project_1.pk}))
         self.assertEqual(report_resp.status_code, 403)
 
     def test_student_progress_web_views(self):
@@ -209,36 +209,34 @@ class ProgressTests(TestCase):
         self.client.force_login(self.student_1)
 
         # Picker view (single assignment redirects to update page)
-        picker_resp = self.client.get(reverse('progress:student_progress_list'))
+        picker_resp = self.client.get(reverse("progress:student_progress_list"))
         self.assertEqual(picker_resp.status_code, 302)
 
         # Update page GET
         update_page_resp = self.client.get(
-            reverse('progress:update_progress', kwargs={'assignment_id': self.assignment_1.pk})
+            reverse("progress:update_progress", kwargs={"assignment_id": self.assignment_1.pk})
         )
         self.assertEqual(update_page_resp.status_code, 200)
         self.assertContains(update_page_resp, "Current Progress")
 
         # Update page POST
         post_resp = self.client.post(
-            reverse('progress:update_progress', kwargs={'assignment_id': self.assignment_1.pk}),
-            {'percent_complete': 30, 'remarks': 'Initial 30 percent progress'}
+            reverse("progress:update_progress", kwargs={"assignment_id": self.assignment_1.pk}),
+            {"percent_complete": 30, "remarks": "Initial 30 percent progress"},
         )
         self.assertRedirects(
-            post_resp,
-            reverse('progress:update_progress', kwargs={'assignment_id': self.assignment_1.pk})
+            post_resp, reverse("progress:update_progress", kwargs={"assignment_id": self.assignment_1.pk})
         )
         self.assignment_1.refresh_from_db()
         self.assertEqual(self.assignment_1.progress_updates.first().percent_complete, 30)
 
         # Update via assignment_detail POST
         detail_post_resp = self.client.post(
-            reverse('assignments:assignment_detail', kwargs={'pk': self.assignment_1.pk}),
-            {'update_progress': '1', 'percent_complete': 45, 'remarks': 'Pushed to 45%'}
+            reverse("assignments:assignment_detail", kwargs={"pk": self.assignment_1.pk}),
+            {"update_progress": "1", "percent_complete": 45, "remarks": "Pushed to 45%"},
         )
         self.assertRedirects(
-            detail_post_resp,
-            reverse('assignments:assignment_detail', kwargs={'pk': self.assignment_1.pk})
+            detail_post_resp, reverse("assignments:assignment_detail", kwargs={"pk": self.assignment_1.pk})
         )
         self.assignment_1.refresh_from_db()
         self.assertEqual(self.assignment_1.progress_updates.first().percent_complete, 45)
@@ -248,34 +246,29 @@ class ProgressTests(TestCase):
         self.client.force_login(self.teacher_1)
 
         # Monitor progress view
-        monitor_resp = self.client.get(reverse('progress:monitor_progress'))
+        monitor_resp = self.client.get(reverse("progress:monitor_progress"))
         self.assertEqual(monitor_resp.status_code, 200)
         self.assertContains(monitor_resp, "Student One")
 
         # Student progress history view
         history_resp = self.client.get(
-            reverse('progress:assignment_progress_history', kwargs={'assignment_id': self.assignment_1.pk})
+            reverse("progress:assignment_progress_history", kwargs={"assignment_id": self.assignment_1.pk})
         )
         self.assertEqual(history_resp.status_code, 200)
         self.assertContains(history_resp, "Student Milestone History")
 
         # Report select view
-        report_select_resp = self.client.get(reverse('progress:progress_report_select'))
+        report_select_resp = self.client.get(reverse("progress:progress_report_select"))
         self.assertEqual(report_select_resp.status_code, 200)
         self.assertContains(report_select_resp, self.project_1.title)
 
         # Project progress report HTML view
-        report_resp = self.client.get(
-            reverse('progress:progress_report', kwargs={'project_id': self.project_1.pk})
-        )
+        report_resp = self.client.get(reverse("progress:progress_report", kwargs={"project_id": self.project_1.pk}))
         self.assertEqual(report_resp.status_code, 200)
         self.assertContains(report_resp, "Milestone Progress Report")
 
         # Project progress report CSV download
-        csv_resp = self.client.get(
-            reverse('progress:progress_report_csv', kwargs={'project_id': self.project_1.pk})
-        )
+        csv_resp = self.client.get(reverse("progress:progress_report_csv", kwargs={"project_id": self.project_1.pk}))
         self.assertEqual(csv_resp.status_code, 200)
-        self.assertEqual(csv_resp['Content-Type'], 'text/csv')
-        self.assertIn('attachment;', csv_resp['Content-Disposition'])
-
+        self.assertEqual(csv_resp["Content-Type"], "text/csv")
+        self.assertIn("attachment;", csv_resp["Content-Disposition"])

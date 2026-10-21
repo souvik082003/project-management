@@ -1,22 +1,26 @@
 import os
 import shutil
 import tempfile
+from datetime import timedelta
 from unittest.mock import patch
-from django.test import TestCase, override_settings
+
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from datetime import timedelta
+
 from accounts.models import UserRole
 from accounts.services import register_user
-from projects.services import create_project
 from assignments.models import AssignmentStatus, ProjectAssignment
 from assignments.services import assign_students_to_project, transition
+from projects.services import create_project
 from submissions.models import Submission
 from submissions.services import (
-    submit_file, teacher_open_submission, get_submission_for_download,
-    sanitise_filename
+    get_submission_for_download,
+    sanitise_filename,
+    submit_file,
+    teacher_open_submission,
 )
 
 
@@ -46,35 +50,35 @@ class SubmissionTests(TestCase):
             email="teacher.one@example.edu",
             password="StrongPassword#2024",
             role=UserRole.TEACHER,
-            employee_id="T-01"
+            employee_id="T-01",
         )
         self.teacher_2 = register_user(
             name="Teacher Two",
             email="teacher.two@example.edu",
             password="StrongPassword#2024",
             role=UserRole.TEACHER,
-            employee_id="T-02"
+            employee_id="T-02",
         )
         self.student_1 = register_user(
             name="Student Alice",
             email="alice@example.edu",
             password="StrongPassword#2024",
             role=UserRole.STUDENT,
-            roll_no="ALICE-01"
+            roll_no="ALICE-01",
         )
         self.student_2 = register_user(
             name="Student Bob",
             email="bob@example.edu",
             password="StrongPassword#2024",
             role=UserRole.STUDENT,
-            roll_no="BOB-02"
+            roll_no="BOB-02",
         )
         self.future_deadline = timezone.now() + timedelta(days=7)
         self.project = create_project(
             teacher=self.teacher_1,
             title="Operating Systems Project",
             description="Build scheduler",
-            deadline=self.future_deadline
+            deadline=self.future_deadline,
         )
         assign_students_to_project(self.teacher_1, self.project, [self.student_1.id])
         self.assignment_1 = ProjectAssignment.objects.get(project=self.project, student=self.student_1)
@@ -164,14 +168,14 @@ class SubmissionTests(TestCase):
             pdf_content = b"%PDF-1.4\ntest failure\n%%EOF"
             upload = SimpleUploadedFile("fail.pdf", pdf_content, content_type="application/pdf")
 
-            with patch('submissions.models.Submission.objects.create', side_effect=RuntimeError("Simulated DB Crash")):
+            with patch("submissions.models.Submission.objects.create", side_effect=RuntimeError("Simulated DB Crash")):
                 with self.assertRaises(RuntimeError):
                     submit_file(self.assignment_1, upload, self.student_1)
 
             # Verify no DB row
             self.assertEqual(Submission.objects.count(), 0)
             # Verify no orphan file in temp_media
-            upload_dir = os.path.join(self.temp_media, 'uploads', str(self.assignment_1.id))
+            upload_dir = os.path.join(self.temp_media, "uploads", str(self.assignment_1.id))
             if os.path.exists(upload_dir):
                 self.assertEqual(len(os.listdir(upload_dir)), 0)
 
@@ -182,6 +186,7 @@ class SubmissionTests(TestCase):
             upload = SimpleUploadedFile("wrong.pdf", pdf_content, content_type="application/pdf")
 
             from django.http import Http404
+
             with self.assertRaises(Http404):
                 submit_file(self.assignment_1, upload, self.student_2)
 
@@ -219,6 +224,7 @@ class SubmissionTests(TestCase):
 
             # 4. Other teacher denied with 404
             from django.http import Http404
+
             with self.assertRaises(Http404):
                 get_submission_for_download(sub.id, self.teacher_2)
 
@@ -232,6 +238,7 @@ class SubmissionTests(TestCase):
             # Simulate past deadline
             past_time = timezone.now() - timedelta(days=2)
             from projects.models import Project
+
             Project.objects.filter(pk=self.project.pk).update(deadline=past_time)
             self.project.refresh_from_db()
 
@@ -249,7 +256,9 @@ class SubmissionTests(TestCase):
             pdf_content = b"%PDF-1.4\ncontent\n%%EOF"
             upload = SimpleUploadedFile("notify.pdf", pdf_content, content_type="application/pdf")
 
-            with patch('submissions.services.notify_teacher_new_submission', side_effect=RuntimeError("SMTP Server Down")):
+            with patch(
+                "submissions.services.notify_teacher_new_submission", side_effect=RuntimeError("SMTP Server Down")
+            ):
                 submission = submit_file(self.assignment_1, upload, self.student_1)
                 self.assertIsNotNone(submission.pk)
                 self.assertEqual(submission.version, 1)
@@ -263,24 +272,27 @@ class SubmissionTests(TestCase):
             pdf_content = b"%PDF-1.4\nweb upload\n%%EOF"
             upload = SimpleUploadedFile("web_report.pdf", pdf_content, content_type="application/pdf")
             post_resp = self.client.post(
-                reverse('submissions:upload_submission', kwargs={'assignment_id': self.assignment_1.pk}),
-                {'file': upload}
+                reverse("submissions:upload_submission", kwargs={"assignment_id": self.assignment_1.pk}),
+                {"file": upload},
             )
             self.assertRedirects(
-                post_resp,
-                reverse('submissions:upload_submission', kwargs={'assignment_id': self.assignment_1.pk})
+                post_resp, reverse("submissions:upload_submission", kwargs={"assignment_id": self.assignment_1.pk})
             )
             submission = Submission.objects.get(file_name="web_report.pdf")
 
             # Teacher opens detail view (transitions Submitted -> Under review)
             self.client.force_login(self.teacher_1)
-            detail_resp = self.client.get(reverse('submissions:submission_detail', kwargs={'submission_id': submission.pk}))
+            detail_resp = self.client.get(
+                reverse("submissions:submission_detail", kwargs={"submission_id": submission.pk})
+            )
             self.assertEqual(detail_resp.status_code, 200)
             self.assertContains(detail_resp, "web_report.pdf")
             self.assignment_1.refresh_from_db()
             self.assertEqual(self.assignment_1.status, AssignmentStatus.UNDER_REVIEW)
 
             # Teacher downloads file
-            download_resp = self.client.get(reverse('submissions:download_submission', kwargs={'submission_id': submission.pk}))
+            download_resp = self.client.get(
+                reverse("submissions:download_submission", kwargs={"submission_id": submission.pk})
+            )
             self.assertEqual(download_resp.status_code, 200)
-            self.assertEqual(download_resp['Content-Disposition'], 'attachment; filename="web_report.pdf"')
+            self.assertEqual(download_resp["Content-Disposition"], 'attachment; filename="web_report.pdf"')

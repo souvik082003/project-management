@@ -2,6 +2,43 @@
 
 All notable changes to the Academic Project Management System (PMS) will be documented in this file.
 
+## [Prompt 7] - Full Testing, Security Audits, and Quality Pass
+### Added
+- Created `docs/TEST_PLAN.md` with a complete traceability matrix mapping all 17 use cases (UC01 through UC17) with positive and negative test cases, state transition tables, and risk mitigations (R4 integration, R7 security, R8 data loss, R9 file upload).
+- Implemented `tests/integration/test_sequences.py` with 4 full integration tests:
+  - Sequence 1: Login, session authentication, and 5-attempt brute-force lockout.
+  - Sequence 2: Deliverable file submission, magic-byte inspection, versioning, and teacher inspection.
+  - Sequence 3: Teacher review, revision request cycle, resubmission, and marks evaluation.
+  - Master End-to-End Workflow: Multi-student project allocation, concurrent milestone updates, submission, revision cycle, grading, and automated project closure.
+- Implemented `tests/security/test_security_suite.py` with 11 specialized security tests:
+  - URL Authentication Gating: Automated loop validating that every authenticated endpoint requires login.
+  - Role 403 Barriers: Student access to teacher endpoints and teacher access to student endpoints return HTTP 403 Forbidden.
+  - IDOR Student Isolation: Students attempting to view or modify another student's assignment, progress, submission, download, feedback, or marks receive 404/403 without data disclosure.
+  - IDOR Teacher Isolation: Supervisors cannot view, grade, or generate reports for projects owned by other teachers.
+  - CSRF Enforcement: Unauthenticated and un-tokenized POST requests are blocked by `CsrfViewMiddleware`.
+  - Template XSS Auto-Escaping: Verifies that malicious HTML/JavaScript tags in project titles, descriptions, and comments are escaped.
+  - SQLi Resistance: Query safety verification against SQL injection payload attacks in filters.
+  - File Upload Attack Suite: Defense-in-depth rejection of `.exe`, `.sh`, `.py`, double extensions (`.pdf.exe`), PE binary disguised as PDF, path traversal (`../../`), and oversized file bombs.
+  - Download Authorization: Strict permission checks on file streaming endpoints.
+  - Password Hashing: Validates PBKDF2-SHA256 password hashing with salt.
+- Implemented `tests/unit/test_services_coverage.py` providing targeted edge-case coverage across all seven service modules, elevating `services.py` test coverage to **94%** overall with every service module achieving `>= 85%`:
+  - `accounts/services.py`: 96%
+  - `assignments/services.py`: 95%
+  - `dashboard/services.py`: 100%
+  - `progress/services.py`: 99%
+  - `projects/services.py`: 100%
+  - `reviews/services.py`: 91%
+  - `submissions/services.py`: 86%
+- Configured production deployment settings in `pms/settings/prod.py` (HSTS, secure cookies, SSL redirect, nosniff, frame denial, database fallback) and verified zero warnings on `manage.py check --deploy`.
+- Added automated CI pipeline in `.github/workflows/ci.yml` matrix-testing Python 3.11 and 3.12 with linting, SAST scanning, deployment checks, and coverage enforcement.
+- Created `docs/SECURITY.md` documenting STRIDE threat model mitigations, defense-in-depth file upload architecture, deployment security flags, and vulnerability management.
+- Created `docs/UAT_CHECKLIST.md` providing step-by-step role scenarios and acceptance criteria for browser verification.
+
+### Changed
+- Added database indexes (`db_index=True`) on `Project.status`, `ProjectAssignment.status`, and `Notification.is_read` with applied migrations (`assignments.0003`, `dashboard.0002`, `projects.0002`).
+- Eliminated N+1 queries in `reviews_dashboard_view` using conditional aggregation (`Count` with `filter=Q(...)`) and in `get_teacher_dashboard_data` using `annotate(num_assignments=Count('assignments'))`.
+- Configured `pyproject.toml` with Ruff linter and formatter settings. Formatted 102 files and resolved all lint errors.
+
 ## [Prompt 6] - Dashboard, Real Notifications, and Operations (UC17)
 ### Added
 - Implemented `Notification` model in `dashboard/models.py` (`user` FK, `message`, `is_read`, `created_at`, `link`) with migrations and admin registration.

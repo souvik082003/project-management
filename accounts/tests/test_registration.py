@@ -1,6 +1,7 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
-from django.core.exceptions import ValidationError
+
 from accounts.models import User, UserRole
 from accounts.services import register_user
 
@@ -14,7 +15,7 @@ class RegistrationTests(TestCase):
             password="StrongPassword#2024",
             role=UserRole.STUDENT,
             department="Computer Science",
-            roll_no="CS2024-001"
+            roll_no="CS2024-001",
         )
         self.assertIsNotNone(user.pk)
         self.assertEqual(user.email, "alice@example.edu")
@@ -32,7 +33,7 @@ class RegistrationTests(TestCase):
             password="StrongPassword#2024",
             role=UserRole.TEACHER,
             department="Computer Science",
-            employee_id="EMP-1001"
+            employee_id="EMP-1001",
         )
         self.assertIsNotNone(user.pk)
         self.assertEqual(user.email, "bob@example.edu")
@@ -49,7 +50,7 @@ class RegistrationTests(TestCase):
             email="duplicate@example.edu",
             password="StrongPassword#2024",
             role=UserRole.STUDENT,
-            roll_no="R-01"
+            roll_no="R-01",
         )
         with self.assertRaises(ValidationError) as ctx:
             register_user(
@@ -57,7 +58,7 @@ class RegistrationTests(TestCase):
                 email="duplicate@example.edu",
                 password="StrongPassword#2024",
                 role=UserRole.STUDENT,
-                roll_no="R-02"
+                roll_no="R-02",
             )
         self.assertIn("email", ctx.exception.message_dict)
 
@@ -69,7 +70,7 @@ class RegistrationTests(TestCase):
                 email="charlie@example.edu",
                 password="123",  # Too short, entirely numeric
                 role=UserRole.STUDENT,
-                roll_no="CS-123"
+                roll_no="CS-123",
             )
         self.assertIn("password", ctx.exception.message_dict)
 
@@ -81,7 +82,7 @@ class RegistrationTests(TestCase):
                 email="noroll@example.edu",
                 password="StrongPassword#2024",
                 role=UserRole.STUDENT,
-                roll_no=""
+                roll_no="",
             )
         self.assertIn("roll_no", ctx.exception.message_dict)
 
@@ -93,7 +94,7 @@ class RegistrationTests(TestCase):
                 email="noemp@example.edu",
                 password="StrongPassword#2024",
                 role=UserRole.TEACHER,
-                employee_id=""
+                employee_id="",
             )
         self.assertIn("employee_id", ctx.exception.message_dict)
 
@@ -101,11 +102,7 @@ class RegistrationTests(TestCase):
         """Stored password must be hashed (salted PBKDF2), never equal to plain text."""
         raw_password = "MySecurePassword#99"
         user = register_user(
-            name="Hashed User",
-            email="hashed@example.edu",
-            password=raw_password,
-            role=UserRole.STUDENT,
-            roll_no="H-01"
+            name="Hashed User", email="hashed@example.edu", password=raw_password, role=UserRole.STUDENT, roll_no="H-01"
         )
         # Verify stored password starts with a hashing algorithm prefix and is not raw text
         self.assertNotEqual(user.password, raw_password)
@@ -114,14 +111,17 @@ class RegistrationTests(TestCase):
 
     def test_registration_view_post_success(self):
         """Registration view accepts valid POST and redirects to login."""
-        response = self.client.post(reverse('accounts:register'), {
-            'name': 'Web Student',
-            'email': 'webstudent@example.edu',
-            'role': UserRole.STUDENT,
-            'department': 'Electronics',
-            'roll_no': 'ECE-2024-01',
-            'password': 'StrongPassword#2024',
-            'password_confirm': 'StrongPassword#2024'
-        })
-        self.assertRedirects(response, reverse('accounts:login'))
-        self.assertTrue(User.objects.filter(email='webstudent@example.edu').exists())
+        response = self.client.post(
+            reverse("accounts:register"),
+            {
+                "name": "Web Student",
+                "email": "webstudent@example.edu",
+                "role": UserRole.STUDENT,
+                "department": "Electronics",
+                "roll_no": "ECE-2024-01",
+                "password": "StrongPassword#2024",
+                "password_confirm": "StrongPassword#2024",
+            },
+        )
+        self.assertRedirects(response, reverse("accounts:login"))
+        self.assertTrue(User.objects.filter(email="webstudent@example.edu").exists())
