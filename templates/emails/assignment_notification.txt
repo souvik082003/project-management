@@ -1,0 +1,16 @@
+Hello {{ student.get_display_name }},
+
+You have been assigned to a new academic project: "{{ project.title }}" by {{ project.created_by.get_display_name }}.
+
+Project Details:
+- Title: {{ project.title }}
+- Supervisor: {{ project.created_by.get_display_name }} ({{ project.created_by.email }})
+- Deadline: {{ project.deadline|date:"F d, Y H:i" }}
+
+Scope:
+{{ project.description }}
+
+Please log in to the Project Management System to view your assignment, track milestones, and submit your deliverables.
+
+Best regards,
+Academic Project Management System (PMS)

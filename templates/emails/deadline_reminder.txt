@@ -1,0 +1,12 @@
+Hello {{ student.get_display_name }},
+
+This is a reminder that the submission deadline for your project "{{ project.title }}" is approaching in 2 days.
+
+Project: {{ project.title }}
+Supervisor: {{ project.created_by.get_display_name }}
+Deadline: {{ project.deadline|date:"F d, Y H:i" }}
+
+Please ensure your deliverables are prepared and uploaded to PMS prior to the deadline.
+
+Best regards,
+Academic Project Management System (PMS)

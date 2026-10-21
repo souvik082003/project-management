@@ -106,6 +106,18 @@
                                 <span class="badge bg-secondary px-2 py-1">{{ user.role }}</span>
                             {% endif %}
                         </li>
+                        <!-- In-App Notification Bell -->
+                        <li class="nav-item me-2">
+                            <a class="nav-link text-light position-relative px-2" href="{% url 'dashboard:notifications_list' %}" title="Notifications">
+                                <i class="bi bi-bell"></i>
+                                {% if unread_notifications_count > 0 %}
+                                    <span class="position-absolute top-1 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                                        {{ unread_notifications_count }}
+                                        <span class="visually-hidden">unread notifications</span>
+                                    </span>
+                                {% endif %}
+                            </a>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-light" href="#" id="userMenuDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-person-circle me-1"></i>

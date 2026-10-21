@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; }
+        .card { max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+        .header { background: #198754; color: #fff; padding: 20px; text-align: center; }
+        .content { padding: 25px; }
+        .badge { display: inline-block; padding: 4px 10px; background: #d1e7dd; color: #0f5132; border-radius: 4px; font-weight: bold; }
+        .badge-late { background: #f8d7da; color: #842029; }
+        .info-box { background: #f8f9fa; border-left: 4px solid #198754; padding: 15px; margin: 20px 0; }
+        .footer { text-align: center; font-size: 12px; color: #6c757d; padding: 15px; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <h2 style="margin: 0;">New Deliverable Submitted</h2>
+        </div>
+        <div class="content">
+            <p>Hello <strong>{{ teacher.get_display_name }}</strong>,</p>
+            <p>A new student deliverable has been uploaded for your supervision:</p>
+
+            <div class="info-box">
+                <h3 style="margin-top: 0; color: #198754;">{{ project.title }}</h3>
+                <p><strong>Student:</strong> {{ student.get_display_name }} ({{ student.roll_no|default:student.email }})</p>
+                <p><strong>Deliverable:</strong> {{ submission.file_name }} ({{ submission.formatted_size }})</p>
+                <p><strong>Version:</strong> <span class="badge">Version {{ submission.version }}</span></p>
+                <p><strong>Submission Time:</strong> {{ submission.submitted_on|date:"F d, Y H:i" }}
+                    {% if submission.is_late %}
+                        <span class="badge badge-late">Late Submission</span>
+                    {% else %}
+                        <span class="badge">On Time</span>
+                    {% endif %}
+                </p>
+            </div>
+
+            <p>Log in to PMS to download, review, and evaluate this deliverable.</p>
+        </div>
+        <div class="footer">
+            &copy; Academic Project Management System (PMS). All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

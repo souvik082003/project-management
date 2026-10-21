@@ -24,27 +24,26 @@ logger = logging.getLogger('pms')
 
 def notify_student_new_feedback(feedback: Feedback) -> None:
     """
-    Notification stub: logs feedback notification sent to student.
-    Real email delivery wired in Sprint 6.
+    Notifies student of review feedback via email and in-app alert.
+    Never lets notification failure break review submission.
     """
-    logger.info(
-        f"[NOTIFICATION STUB] New Feedback on Submission v{feedback.submission.version} "
-        f"for Project '{feedback.submission.assignment.project.title}' sent to "
-        f"Student '{feedback.submission.assignment.student.get_display_name()}' "
-        f"(Revision Requested={feedback.requested_revision})"
-    )
+    try:
+        from dashboard import notifications as dashboard_notifications
+        dashboard_notifications.notify_feedback(feedback)
+    except Exception as err:
+        logger.warning(f"Feedback notification failed (non-blocking): {err}")
 
 
 def notify_student_marks_assigned(marks: Marks) -> None:
     """
-    Notification stub: logs marks published notification sent to student.
-    Real email delivery wired in Sprint 6.
+    Notifies student of published marks and grades via email and in-app alert.
+    Never lets notification failure break marks saving.
     """
-    logger.info(
-        f"[NOTIFICATION STUB] Marks Published for Project '{marks.assignment.project.title}' "
-        f"to Student '{marks.assignment.student.get_display_name()}': "
-        f"{marks.score}/{marks.max_score} ({marks.percentage}%, Grade {marks.grade_band})"
-    )
+    try:
+        from dashboard import notifications as dashboard_notifications
+        dashboard_notifications.notify_marks(marks)
+    except Exception as err:
+        logger.warning(f"Marks notification failed (non-blocking): {err}")
 
 
 def give_feedback(submission: Submission, teacher, comments: str, request_revision: bool = False) -> Feedback:

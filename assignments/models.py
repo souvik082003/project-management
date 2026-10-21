@@ -30,6 +30,7 @@ class ProjectAssignment(models.Model):
         choices=AssignmentStatus.choices,
         default=AssignmentStatus.ASSIGNED
     )
+    deadline_reminder_sent = models.BooleanField(default=False, verbose_name="Deadline Reminder Sent")
 
     class Meta:
         ordering = ['-assigned_on']

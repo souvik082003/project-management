@@ -69,13 +69,14 @@ def transition(assignment: ProjectAssignment, target_status: str) -> ProjectAssi
 
 def notify_assignment(assignment: ProjectAssignment) -> None:
     """
-    Notification stub: logs assignment notification.
-    Real email sending will be wired in Sprint 6.
+    Notifies student of project allocation via email and in-app alert.
+    Never lets notification failure break assignment creation.
     """
-    logger.info(
-        f"[NOTIFICATION STUB] Assignment created: Student='{assignment.student.get_display_name()}' "
-        f"({assignment.student.email}) assigned to Project='{assignment.project.title}'"
-    )
+    try:
+        from dashboard import notifications as dashboard_notifications
+        dashboard_notifications.notify_assignment(assignment)
+    except Exception as err:
+        logger.warning(f"Assignment notification failed (non-blocking): {err}")
 
 
 def assign_students_to_project(teacher, project: Project, student_ids: list[int]) -> tuple[int, int]:
@@ -171,3 +172,43 @@ def mark_overdue_assignments(now=None) -> int:
 
     logger.info(f"Marked {count} assignments as Overdue at {current_time}.")
     return count
+
+
+def send_deadline_reminders(now=None) -> int:
+    """
+    Finds active assignments whose project deadline is approaching within 2 days
+    (now < deadline <= now + 2 days), where a reminder has not already been sent.
+    Sends notification email and in-app alert, setting deadline_reminder_sent=True.
+    Emails only the right students, once.
+    Returns the count of reminders dispatched.
+    """
+    from datetime import timedelta
+    current_time = now or timezone.now()
+    two_days_later = current_time + timedelta(days=2)
+
+    active_statuses = [
+        AssignmentStatus.ASSIGNED,
+        AssignmentStatus.IN_PROGRESS,
+        AssignmentStatus.REVISION_REQUESTED
+    ]
+
+    assignments_to_remind = ProjectAssignment.objects.filter(
+        deadline_reminder_sent=False,
+        status__in=active_statuses,
+        project__deadline__gt=current_time,
+        project__deadline__lte=two_days_later
+    ).select_related('project', 'student')
+
+    count = 0
+    from dashboard import notifications as dashboard_notifications
+    for assign in assignments_to_remind:
+        dashboard_notifications.notify_deadline_reminder(assign)
+        assign.deadline_reminder_sent = True
+        assign.save(update_fields=['deadline_reminder_sent'])
+        count += 1
+        logger.info(
+            f"Deadline reminder sent to {assign.student.email} for Project '{assign.project.title}'"
+        )
+
+    return count
+

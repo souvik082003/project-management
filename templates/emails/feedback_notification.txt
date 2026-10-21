@@ -1,0 +1,16 @@
+Hello {{ student.get_display_name }},
+
+Your supervisor {{ teacher.get_display_name }} has reviewed your submission (v{{ submission.version }}) for project "{{ project.title }}".
+
+Review Summary:
+- Project: {{ project.title }}
+- Submission Version: v{{ submission.version }}
+- Revision Requested: {% if feedback.requested_revision %}YES - Updated deliverable required{% else %}NO - Deliverable accepted{% endif %}
+
+Supervisor Comments:
+{{ feedback.comments }}
+
+Please log in to PMS to view full details and submit an updated revision if requested.
+
+Best regards,
+Academic Project Management System (PMS)

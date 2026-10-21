@@ -1,0 +1,15 @@
+Hello {{ teacher.get_display_name }},
+
+A student has submitted a new project deliverable:
+
+- Project: {{ project.title }}
+- Student: {{ student.get_display_name }} ({{ student.email }})
+- Deliverable: {{ submission.file_name }} ({{ submission.formatted_size }})
+- Version: v{{ submission.version }}
+- Submitted On: {{ submission.submitted_on|date:"F d, Y H:i" }}
+- Status: {% if submission.is_late %}Late Submission{% else %}On Time{% endif %}
+
+Please log in to PMS to download and review this deliverable.
+
+Best regards,
+Academic Project Management System (PMS)

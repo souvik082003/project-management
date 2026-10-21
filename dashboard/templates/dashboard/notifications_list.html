@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - PMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+                <h2 class="h3 fw-bold mb-1"><i class="bi bi-bell me-2 text-primary"></i>Notifications</h2>
+                <p class="text-muted small mb-0">System alerts, assignment dispatches, review remarks, and evaluation notices</p>
+            </div>
+            {% if unread_notifications_count > 0 %}
+                <form method="post" action="{% url 'dashboard:mark_all_notifications_read' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-check2-all me-1"></i> Mark All as Read
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        <div class="card shadow-sm border-0">
+            {% if notifications %}
+                <div class="list-group list-group-flush">
+                    {% for n in notifications %}
+                        <div class="list-group-item p-3 {% if not n.is_read %}bg-light border-start border-4 border-primary{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        {% if not n.is_read %}
+                                            <span class="badge bg-primary" style="font-size: 0.65rem;">NEW</span>
+                                        {% endif %}
+                                        <span class="small text-muted">{{ n.created_at|date:"M d, Y H:i" }}</span>
+                                    </div>
+                                    <p class="mb-1 text-dark">{{ n.message }}</p>
+                                    {% if n.link %}
+                                        <a href="{% url 'dashboard:mark_notification_read' n.id %}" class="small text-decoration-none fw-semibold">
+                                            View details <i class="bi bi-arrow-right"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                {% if not n.is_read %}
+                                    <a href="{% url 'dashboard:mark_notification_read' n.id %}" class="btn btn-sm btn-outline-primary" title="Mark as read">
+                                        <i class="bi bi-check"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-bell-slash display-5 text-muted mb-3 d-block"></i>
+                    <h5 class="fw-bold">No Notifications</h5>
+                    <p class="text-muted small">You're all caught up! New assignment, feedback, or marks notices will appear here.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; }
+        .card { max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+        .header { background: #dc3545; color: #fff; padding: 20px; text-align: center; }
+        .content { padding: 25px; }
+        .badge { display: inline-block; padding: 4px 10px; background: #f8d7da; color: #842029; border-radius: 4px; font-weight: bold; }
+        .info-box { background: #f8f9fa; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; }
+        .footer { text-align: center; font-size: 12px; color: #6c757d; padding: 15px; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <h2 style="margin: 0;">Upcoming Project Deadline Reminder</h2>
+        </div>
+        <div class="content">
+            <p>Hello <strong>{{ student.get_display_name }}</strong>,</p>
+            <p>This is an automated reminder that your project deadline is approaching within the next 2 days.</p>
+
+            <div class="info-box">
+                <h3 style="margin-top: 0; color: #dc3545;">{{ project.title }}</h3>
+                <p><strong>Supervisor:</strong> {{ project.created_by.get_display_name }}</p>
+                <p><strong>Deadline:</strong> <span class="badge">{{ project.deadline|date:"F d, Y H:i" }}</span></p>
+            </div>
+
+            <p>Please finalize your work and upload your deliverable on the PMS platform ahead of the cutoff.</p>
+        </div>
+        <div class="footer">
+            &copy; Academic Project Management System (PMS). All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

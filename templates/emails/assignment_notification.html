@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; }
+        .card { max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; }
+        .header { background: #0d6efd; color: #fff; padding: 20px; text-align: center; }
+        .content { padding: 25px; }
+        .badge { display: inline-block; padding: 4px 10px; background: #e7f1ff; color: #0d6efd; border-radius: 4px; font-weight: bold; }
+        .info-box { background: #f8f9fa; border-left: 4px solid #0d6efd; padding: 15px; margin: 20px 0; }
+        .footer { text-align: center; font-size: 12px; color: #6c757d; padding: 15px; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <h2 style="margin: 0;">Project Assignment Notice</h2>
+        </div>
+        <div class="content">
+            <p>Hello <strong>{{ student.get_display_name }}</strong>,</p>
+            <p>You have been officially allocated to a new academic project in the Project Management System.</p>
+
+            <div class="info-box">
+                <h3 style="margin-top: 0; color: #0d6efd;">{{ project.title }}</h3>
+                <p><strong>Supervisor:</strong> {{ project.created_by.get_display_name }} ({{ project.created_by.email }})</p>
+                <p><strong>Deadline:</strong> <span class="badge">{{ project.deadline|date:"F d, Y H:i" }}</span></p>
+                <p><strong>Description:</strong></p>
+                <p style="white-space: pre-wrap; color: #555;">{{ project.description }}</p>
+            </div>
+
+            <p>Log in to your PMS portal to review assignment details and submit milestone updates.</p>
+        </div>
+        <div class="footer">
+            &copy; Academic Project Management System (PMS). All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

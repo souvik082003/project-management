@@ -1,0 +1,16 @@
+Hello {{ student.get_display_name }},
+
+Your supervisor {{ teacher.get_display_name }} has published evaluation marks for your project "{{ project.title }}".
+
+Academic Evaluation Details:
+- Project: {{ project.title }}
+- Score: {{ marks.score }} / {{ marks.max_score }}
+- Percentage: {{ marks.percentage }}%
+- Grade Band: Grade {{ marks.grade_band }}
+- Result: {% if marks.is_pass %}PASS{% else %}FAIL{% endif %}
+- Graded On: {{ marks.graded_on|date:"F d, Y H:i" }}
+
+Please log in to your PMS account to view your complete grade report and supervisor remarks.
+
+Best regards,
+Academic Project Management System (PMS)

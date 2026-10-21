@@ -106,14 +106,14 @@ def validate_uploaded_file(uploaded_file) -> None:
 
 def notify_teacher_new_submission(submission: Submission) -> None:
     """
-    Notification stub: notifies project teacher of a new student submission.
-    Real email delivery implemented in Sprint 6.
+    Notifies supervising teacher of student deliverable upload.
+    Real email delivery and in-app alert dispatched non-blockingly.
     """
-    logger.info(
-        f"[NOTIFICATION STUB] New Submission v{submission.version} received for Project "
-        f"'{submission.assignment.project.title}' from Student '{submission.assignment.student.get_display_name()}' "
-        f"({submission.assignment.student.email})"
-    )
+    try:
+        from dashboard import notifications as dashboard_notifications
+        dashboard_notifications.notify_teacher_new_submission(submission)
+    except Exception as err:
+        logger.warning(f"Submission notification failed (non-blocking): {err}")
 
 
 def submit_file(assignment: ProjectAssignment, uploaded_file, user) -> Submission:

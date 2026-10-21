@@ -2,6 +2,24 @@
 
 All notable changes to the Academic Project Management System (PMS) will be documented in this file.
 
+## [Prompt 6] - Dashboard, Real Notifications, and Operations (UC17)
+### Added
+- Implemented `Notification` model in `dashboard/models.py` (`user` FK, `message`, `is_read`, `created_at`, `link`) with migrations and admin registration.
+- Added `deadline_reminder_sent` boolean tracking flag to `ProjectAssignment` in `assignments/models.py` with migrations.
+- Implemented `dashboard/notifications.py` featuring:
+  - `send_email(to, subject, body, html_body=None)` wrapper around Django `send_mail`: multi-part HTML/plain-text delivery, exception logging, and non-blocking safety guarantees (returns `False` on error, never raises into calling services).
+  - High-level notification dispatchers: `notify_assignment`, `notify_teacher_new_submission`, `notify_feedback`, `notify_marks`, and `notify_deadline_reminder` creating in-app notification rows and sending emails.
+- Created responsive HTML and plain-text email templates in `templates/emails/` (`assignment_notification`, `submission_notification`, `feedback_notification`, `marks_notification`, and `deadline_reminder`).
+- Replaced all notification stubs in `assignments/services.py`, `submissions/services.py`, and `reviews/services.py` with live notification calls.
+- Implemented `send_deadline_reminders()` service and management command `python manage.py send_deadline_reminders` to notify students 2 days prior to deadlines with single-email deduplication.
+- Created `docs/OPERATIONS.md` documenting production deployment requirements, environment variables, security checklist, and recommended cron schedules (`mark_overdue` and `send_deadline_reminders`).
+- Added `unread_notifications_count` context processor in `dashboard/context_processors.py` and updated `templates/base.html` with a navbar notification bell and live unread counter badge.
+- Implemented interactive notifications page at `/notifications/` with mark-as-read and mark-all-as-read actions.
+- Implemented role-tailored dashboards at `/dashboard/`:
+  - Student dashboard: active projects grouped by status, deadlines due within 7 days, latest supervisor feedback, latest marks, and a "continue working" priority shortcut list.
+  - Teacher dashboard: overview of supervised projects, KPI metric cards for assignments across all stages, review queue of submissions awaiting review, overdue student alerts, report shortcuts, and an interactive Chart.js assignment status distribution bar chart.
+- Added comprehensive test suite in `dashboard/tests/test_notifications_and_dashboard.py` testing email delivery with both console and SMTP simulation, error resilience, student/teacher dashboard data isolation, notification mark-read flows, and deadline reminder deduplication (88 total project tests passing).
+
 ## [Prompt 5] - Reviews and Grading App (UC12, UC13, UC14, UC15, UC16)
 ### Added
 - Implemented `Feedback` model in `reviews/models.py` (`submission` FK, `teacher` FK, `comments`, `requested_revision` boolean flag, `given_on` timestamp).
