@@ -12,17 +12,48 @@
 
                 <div class="list-group">
                     {% for assignment in assignments %}
-                        <a href="{% url 'submissions:upload_submission' assignment.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
                             <div>
-                                <h6 class="mb-1 fw-bold">{{ assignment.project.title }}</h6>
-                                <small class="text-muted">
+                                <h6 class="mb-1 fw-bold">
+                                    <a href="{% url 'assignments:assignment_detail' assignment.id %}" class="text-decoration-none text-dark">
+                                        {{ assignment.project.title }}
+                                    </a>
+                                </h6>
+                                <small class="text-muted d-block">
                                     Supervisor: {{ assignment.project.created_by.get_display_name }} &bull;
                                     Deadline: {{ assignment.project.deadline|date:"M d, Y H:i" }} &bull;
-                                    Submissions: {{ assignment.submissions.count }}
+                                    Submissions: {{ assignment.submissions.count }} uploaded
                                 </small>
+                                <div class="mt-1">
+                                    {% if assignment.status == 'In progress' or assignment.status == 'Assigned' %}
+                                        <span class="badge bg-success">Ready for Submission</span>
+                                    {% elif assignment.status == 'Revision requested' %}
+                                        <span class="badge bg-warning text-dark">Revision Requested</span>
+                                    {% elif assignment.status == 'Overdue' %}
+                                        <span class="badge bg-danger">Overdue &bull; Late Submission Allowed</span>
+                                    {% elif assignment.status == 'Submitted' %}
+                                        <span class="badge bg-info text-dark">Submitted &bull; Awaiting Review</span>
+                                    {% elif assignment.status == 'Under review' %}
+                                        <span class="badge bg-primary">Under Teacher Review</span>
+                                    {% elif assignment.status == 'Evaluated' %}
+                                        <span class="badge bg-secondary">Evaluated &bull; Graded</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ assignment.get_status_display }}</span>
+                                    {% endif %}
+                                </div>
                             </div>
-                            <span class="badge bg-primary rounded-pill">{{ assignment.get_status_display }}</span>
-                        </a>
+                            <div>
+                                {% if assignment.status == 'In progress' or assignment.status == 'Assigned' or assignment.status == 'Overdue' or assignment.status == 'Revision requested' %}
+                                    <a href="{% url 'submissions:upload_submission' assignment.id %}" class="btn btn-success btn-sm">
+                                        <i class="bi bi-cloud-arrow-up me-1"></i> Upload Deliverable
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'submissions:upload_submission' assignment.id %}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-file-earmark-text me-1"></i> View Submissions
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
                     {% empty %}
                         <div class="text-center py-4 text-muted">
                             You have no active projects assigned.

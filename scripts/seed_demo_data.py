@@ -142,11 +142,11 @@ def seed():
 
     print("Creating assignments and workflows...")
 
-    # --- Rahul on Drone Navigation (Under Review) ---
+    # --- Rahul on Drone Navigation (Revision Requested) ---
     asgn_rahul_drone = ProjectAssignment.objects.create(
         project=proj_drone,
         student=student_rahul,
-        status=AssignmentStatus.UNDER_REVIEW
+        status=AssignmentStatus.REVISION_REQUESTED
     )
     asgn_rahul_drone.assigned_on = now - timedelta(days=20)
     asgn_rahul_drone.save()
@@ -188,8 +188,8 @@ def seed():
     Feedback.objects.create(
         submission=sub_rahul_drone,
         teacher=teacher_sharma,
-        comments="Solid progress on Gazebo simulation. Please include the field trial video link and motor telemetry graphs in the next section.",
-        requested_revision=False,
+        comments="Solid progress on Gazebo simulation. Please include the field trial video link and motor telemetry graphs in Version 2.",
+        requested_revision=True,
         given_on=now - timedelta(days=1)
     )
 

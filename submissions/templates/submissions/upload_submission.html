@@ -82,10 +82,42 @@
                         </div>
                     </form>
                 {% else %}
-                    <div class="alert alert-secondary mb-0">
-                        <i class="bi bi-lock me-1"></i>
-                        File submissions are locked because project status is <strong>{{ assignment.get_status_display }}</strong>.
-                    </div>
+                    {% if assignment.status == 'Submitted' %}
+                        <div class="alert alert-info d-flex align-items-center mb-0">
+                            <i class="bi bi-clock-history fs-4 me-3 text-info"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Deliverable Submitted — Waiting for Teacher Review</h6>
+                                <p class="mb-0 small text-muted">
+                                    Your deliverable has been uploaded successfully and is in the supervisor review queue. Once your teacher reviews this deliverable, they may accept it or request a revision.
+                                </p>
+                            </div>
+                        </div>
+                    {% elif assignment.status == 'Under review' %}
+                        <div class="alert alert-warning d-flex align-items-center mb-0">
+                            <i class="bi bi-eye fs-4 me-3 text-warning"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Currently Under Review</h6>
+                                <p class="mb-0 small text-muted">
+                                    Your supervising teacher is actively reviewing your latest submission. If revisions are requested, this project will reopen for your next version.
+                                </p>
+                            </div>
+                        </div>
+                    {% elif assignment.status == 'Evaluated' %}
+                        <div class="alert alert-success d-flex align-items-center mb-0">
+                            <i class="bi bi-award fs-4 me-3 text-success"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Project Evaluated &amp; Graded</h6>
+                                <p class="mb-0 small text-muted">
+                                    Evaluation for this project is complete. You can view your marks and final feedback from the menu.
+                                </p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-secondary mb-0">
+                            <i class="bi bi-lock me-1"></i>
+                            File submissions are currently not permitted for status: <strong>{{ assignment.get_status_display }}</strong>.
+                        </div>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
