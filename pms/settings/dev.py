@@ -4,6 +4,8 @@ Development settings for PMS.
 from .base import *
 
 DEBUG = config('DEBUG', default=True, cast=bool)
+if 'testserver' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS = list(ALLOWED_HOSTS) + ['testserver']
 
 # Development Database: SQLite default
 DATABASES = {

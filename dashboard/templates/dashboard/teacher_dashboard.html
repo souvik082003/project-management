@@ -198,7 +198,7 @@
                                     <td class="small">{{ p.assignments.count }}</td>
                                     <td class="text-end pe-3">
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'progress:project_progress_report' p.id %}" class="btn btn-outline-secondary" title="Progress Report">
+                                            <a href="{% url 'progress:progress_report' p.id %}" class="btn btn-outline-secondary" title="Progress Report">
                                                 <i class="bi bi-graph-up"></i>
                                             </a>
                                             <a href="{% url 'reviews:marks_report' p.id %}" class="btn btn-outline-primary" title="Marks Report">
