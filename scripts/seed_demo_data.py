@@ -298,7 +298,7 @@ def seed():
     Notification.objects.create(
         user=teacher_sharma,
         message=f"New deliverable submitted by Rahul Verma for 'Autonomous Drone Navigation System'.",
-        link=f"/reviews/submission/{sub_rahul_drone.id}/",
+        link=f"/reviews/submission/{sub_rahul_drone.id}/feedback/",
         is_read=False,
         created_at=now - timedelta(days=2)
     )
